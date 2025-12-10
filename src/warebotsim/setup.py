@@ -17,6 +17,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*')),
         (os.path.join('share', package_name), glob('urdf/jackal.urdf')),
+        (os.path.join('share', package_name), glob('urdf/r2d2.rviz')),
         (os.path.join('share', package_name, 'meshes'), glob('urdf/meshes/*')),
     ],
     install_requires=['setuptools'],
@@ -32,6 +33,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'state_publisher = warebotsim.state_publisher:main'
         ],
     },
 )

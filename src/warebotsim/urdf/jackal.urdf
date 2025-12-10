@@ -23,7 +23,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/jackal-wheel.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -51,7 +51,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/jackal-wheel.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -81,7 +81,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/jackal-wheel.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -111,7 +111,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/jackal-wheel.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-wheel.stl"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -147,7 +147,7 @@
     <visual>
       <origin rpy="1.57079632679 0 1.57079632679" xyz="0 0 -0.0655"/>
       <geometry>
-        <mesh filename="meshes/jackal-base.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-base.stl"/>
       </geometry>
       <material name="dark_grey"/>
     </visual>
@@ -168,7 +168,7 @@
   <link name="front_fender_link">
     <visual>
       <geometry>
-        <mesh filename="meshes/jackal-fender.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-fender.stl"/>
       </geometry>
       <material name="yellow"/>
     </visual>
@@ -181,7 +181,7 @@
   <link name="rear_fender_link">
     <visual>
       <geometry>
-        <mesh filename="meshes/jackal-fender.stl"/>
+        <mesh filename="package://warebotsim/meshes/jackal-fender.stl"/>
       </geometry>
       <material name="yellow"/>
     </visual>

@@ -1,0 +1,73 @@
+running egg_info
+creating ../../build/warebotsim/warebotsim.egg-info
+writing ../../build/warebotsim/warebotsim.egg-info/PKG-INFO
+writing dependency_links to ../../build/warebotsim/warebotsim.egg-info/dependency_links.txt
+writing entry points to ../../build/warebotsim/warebotsim.egg-info/entry_points.txt
+writing requirements to ../../build/warebotsim/warebotsim.egg-info/requires.txt
+writing top-level names to ../../build/warebotsim/warebotsim.egg-info/top_level.txt
+writing manifest file '../../build/warebotsim/warebotsim.egg-info/SOURCES.txt'
+reading manifest file '../../build/warebotsim/warebotsim.egg-info/SOURCES.txt'
+writing manifest file '../../build/warebotsim/warebotsim.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/yektapanj/WareBotSim/build/warebotsim/build
+creating /home/yektapanj/WareBotSim/build/warebotsim/build/lib
+creating /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+copying warebotsim/state_publisher.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+copying warebotsim/__init__.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+running install
+running install_lib
+creating /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/state_publisher.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/__init__.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/state_publisher.py to state_publisher.cpython-312.pyc
+byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/__init__.py to __init__.cpython-312.pyc
+running install_data
+creating /home/yektapanj/WareBotSim/install/warebotsim/share/ament_index
+creating /home/yektapanj/WareBotSim/install/warebotsim/share/ament_index/resource_index
+creating /home/yektapanj/WareBotSim/install/warebotsim/share/ament_index/resource_index/packages
+copying resource/warebotsim -> /home/yektapanj/WareBotSim/install/warebotsim/share/ament_index/resource_index/packages
+copying package.xml -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+creating /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/launch
+copying launch/demo_launch.py -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/launch
+copying urdf/jackal.urdf -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+copying urdf/r2d2.rviz -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+creating /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/top_plate_collision.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/lift_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/novatel-smart7.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/internal_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/camera-beam.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/wheel_right_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/ark_enclosure.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/sick-lms1xx-upright-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/rotacastor_left_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/velodyne_tower.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/bridge-plate.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/camera-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/accessory_fender.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/stereo-camera-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/wibotic_bumper.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/jackal-wheel.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/sick-lms1xx-inverted-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/jackal-fender.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/chassis_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/stereo-camera-beam.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/kinect_mount.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/chassis_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/rotacastor_right_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/jackal-base.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/top_plate.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/hokuyo_utm30.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/jackal-fenders.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/novatel-smart6.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/internal_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/lift_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/extrusion.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/hokuyo_ust10.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+copying urdf/meshes/wheel_left_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+running install_egg_info
+Copying ../../build/warebotsim/warebotsim.egg-info to /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim-0.0.0-py3.12.egg-info
+running install_scripts
+Installing state_publisher script to /home/yektapanj/WareBotSim/install/warebotsim/lib/warebotsim
+writing list of installed files to '/home/yektapanj/WareBotSim/build/warebotsim/install.log'

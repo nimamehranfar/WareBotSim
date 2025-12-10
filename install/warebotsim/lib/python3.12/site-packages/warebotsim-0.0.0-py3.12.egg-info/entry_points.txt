@@ -1,0 +1,2 @@
+[console_scripts]
+state_publisher = warebotsim.state_publisher:main

@@ -1,0 +1,9 @@
+source;share/warebotsim/hook/pythonpath.ps1
+source;share/warebotsim/hook/pythonpath.dsv
+source;share/warebotsim/hook/pythonpath.sh
+source;share/warebotsim/hook/ament_prefix_path.ps1
+source;share/warebotsim/hook/ament_prefix_path.dsv
+source;share/warebotsim/hook/ament_prefix_path.sh
+source;../../build/warebotsim/share/warebotsim/hook/pythonpath_develop.ps1
+source;../../build/warebotsim/share/warebotsim/hook/pythonpath_develop.dsv
+source;../../build/warebotsim/share/warebotsim/hook/pythonpath_develop.sh

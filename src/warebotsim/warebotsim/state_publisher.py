@@ -59,7 +59,7 @@ class StatePublisher(Node):
         # --- TF: odom -> base_link ---
         t = TransformStamped()
         t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = 'odom'
+        t.header.frame_id = 'world'
         t.child_frame_id = 'base_link'
 
         t.transform.translation.x = self.x

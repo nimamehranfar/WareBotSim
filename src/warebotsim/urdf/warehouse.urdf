@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<robot name="warehouse">
+
+  <!-- Root frame -->
+  <link name="world"/>
+
+  <!-- Floor -->
+  <link name="floor">
+    <visual>
+      <geometry>
+        <box size="10 10 0.02"/>
+      </geometry>
+      <material name="floor">
+        <color rgba="0.9 0.9 0.9 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="floor_joint" type="fixed">
+    <parent link="world"/>
+    <child link="floor"/>
+    <origin xyz="0 0 -0.01"/>
+  </joint>
+
+  <!-- Back wall -->
+  <link name="wall_back">
+    <visual>
+      <geometry>
+        <box size="10 0.1 2.5"/>
+      </geometry>
+      <material name="wall">
+        <color rgba="0.6 0.6 0.6 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="wall_back_joint" type="fixed">
+    <parent link="world"/>
+    <child link="wall_back"/>
+    <origin xyz="0 5 1.25"/>
+  </joint>
+
+  <!-- Front wall -->
+  <link name="wall_front">
+    <visual>
+      <geometry>
+        <box size="10 0.1 2.5"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wall_front_joint" type="fixed">
+    <parent link="world"/>
+    <child link="wall_front"/>
+    <origin xyz="0 -5 1.25"/>
+  </joint>
+
+  <!-- Left wall -->
+  <link name="wall_left">
+    <visual>
+      <geometry>
+        <box size="0.1 10 2.5"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wall_left_joint" type="fixed">
+    <parent link="world"/>
+    <child link="wall_left"/>
+    <origin xyz="-5 0 1.25"/>
+  </joint>
+
+  <!-- Right wall -->
+  <link name="wall_right">
+    <visual>
+      <geometry>
+        <box size="0.1 10 2.5"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="wall_right_joint" type="fixed">
+    <parent link="world"/>
+    <child link="wall_right"/>
+    <origin xyz="5 0 1.25"/>
+  </joint>
+
+  <!-- Shelf -->
+  <link name="shelf_1">
+    <visual>
+      <geometry>
+        <box size="1.2 0.4 2.0"/>
+      </geometry>
+      <material name="shelf">
+        <color rgba="0.9 0.7 0.2 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="shelf_1_joint" type="fixed">
+    <parent link="world"/>
+    <child link="shelf_1"/>
+    <origin xyz="2 0 1.0"/>
+  </joint>
+
+</robot>

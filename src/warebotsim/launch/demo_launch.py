@@ -29,7 +29,6 @@ def generate_launch_description():
             package='robot_state_publisher',
             executable='robot_state_publisher',
             name='robot_state_publisher',
-            namespace='robot',
             output='screen',
             parameters=[{'use_sim_time': use_sim_time, 'robot_description': robot_description}],
             arguments=[urdf]),
@@ -60,6 +59,5 @@ def generate_launch_description():
             package='warebotsim',
             executable='state_publisher',
             name='state_publisher',
-            namespace='robot',
             output='screen'),
     ])

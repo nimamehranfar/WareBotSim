@@ -96,5 +96,55 @@
     <child link="shelf_1"/>
     <origin xyz="2 0 1.0"/>
   </joint>
+    
+  <link name="shelf_2">
+    <visual>
+      <geometry>
+        <box size="1.2 0.4 2.0"/>
+      </geometry>
+      <material name="shelf">
+        <color rgba="0.9 0.7 0.2 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="shelf_2_joint" type="fixed">
+    <parent link="world"/>
+    <child link="shelf_2"/>
+    <origin xyz="2 -2 1.0"/>
+  </joint>
+
+  <link name="delivery_1">
+  <visual>
+    <geometry>
+      <cylinder radius="0.25" length="0.05"/>
+    </geometry>
+    <material name="green">
+      <color rgba="0.1 0.8 0.1 1"/>
+    </material>
+  </visual>
+</link>
+
+<joint name="delivery_1_joint" type="fixed">
+  <parent link="world"/>
+  <child link="delivery_1"/>
+  <origin xyz="-4 0 0.025"/>
+</joint>
+
+  <link name="delivery_2">
+  <visual>
+    <geometry>
+      <cylinder radius="0.25" length="0.05"/>
+    </geometry>
+    <material name="green">
+      <color rgba="0.1 0.8 0.1 1"/>
+    </material>
+  </visual>
+</link>
+
+<joint name="delivery_2_joint" type="fixed">
+  <parent link="world"/>
+  <child link="delivery_2"/>
+  <origin xyz="-4 -2 0.025"/>
+</joint>
 
 </robot>

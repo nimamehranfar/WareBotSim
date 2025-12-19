@@ -1,0 +1,81 @@
+[1.044s] Invoking command in '/home/yektapanj/WareBotSim/build/warebotsim': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/yektapanj/WareBotSim/build/warebotsim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --uninstall --editable --build-directory /home/yektapanj/WareBotSim/build/warebotsim/build
+[1.391s] running develop
+[1.600s] Removing /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim.egg-link (link to .)
+[1.676s] Invoked command in '/home/yektapanj/WareBotSim/build/warebotsim' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/yektapanj/WareBotSim/build/warebotsim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --uninstall --editable --build-directory /home/yektapanj/WareBotSim/build/warebotsim/build
+[1.678s] Invoking command in '/home/yektapanj/WareBotSim/src/warebotsim': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/yektapanj/WareBotSim/build/warebotsim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/warebotsim build --build-base /home/yektapanj/WareBotSim/build/warebotsim/build install --record /home/yektapanj/WareBotSim/build/warebotsim/install.log --single-version-externally-managed install_data --force
+[1.950s] running egg_info
+[1.967s] writing ../../build/warebotsim/warebotsim.egg-info/PKG-INFO
+[1.968s] writing dependency_links to ../../build/warebotsim/warebotsim.egg-info/dependency_links.txt
+[1.968s] writing entry points to ../../build/warebotsim/warebotsim.egg-info/entry_points.txt
+[1.969s] writing requirements to ../../build/warebotsim/warebotsim.egg-info/requires.txt
+[1.969s] writing top-level names to ../../build/warebotsim/warebotsim.egg-info/top_level.txt
+[2.010s] reading manifest file '../../build/warebotsim/warebotsim.egg-info/SOURCES.txt'
+[2.013s] writing manifest file '../../build/warebotsim/warebotsim.egg-info/SOURCES.txt'
+[2.013s] running build
+[2.013s] running build_py
+[2.013s] creating /home/yektapanj/WareBotSim/build/warebotsim/build
+[2.013s] creating /home/yektapanj/WareBotSim/build/warebotsim/build/lib
+[2.013s] creating /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+[2.013s] copying warebotsim/order_manager.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+[2.013s] copying warebotsim/state_publisher.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+[2.013s] copying warebotsim/__init__.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+[2.013s] copying warebotsim/fulfill_order_server.py -> /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim
+[2.014s] running install
+[2.021s] running install_lib
+[2.040s] creating /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+[2.040s] copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/order_manager.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+[2.042s] copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/state_publisher.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+[2.042s] copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/__init__.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+[2.042s] copying /home/yektapanj/WareBotSim/build/warebotsim/build/lib/warebotsim/fulfill_order_server.py -> /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim
+[2.043s] byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/order_manager.py to order_manager.cpython-312.pyc
+[2.044s] byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/state_publisher.py to state_publisher.cpython-312.pyc
+[2.045s] byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/__init__.py to __init__.cpython-312.pyc
+[2.045s] byte-compiling /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim/fulfill_order_server.py to fulfill_order_server.cpython-312.pyc
+[2.047s] running install_data
+[2.047s] copying resource/warebotsim -> /home/yektapanj/WareBotSim/install/warebotsim/share/ament_index/resource_index/packages
+[2.047s] copying package.xml -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+[2.048s] copying launch/demo_launch.py -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/launch
+[2.048s] copying urdf/warehouse.urdf -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+[2.048s] copying urdf/r2d2.rviz -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+[2.051s] copying urdf/jackal.urdf -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim
+[2.052s] copying meshes/top_plate_collision.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.053s] copying meshes/lift_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.054s] copying meshes/novatel-smart7.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.056s] copying meshes/internal_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.057s] copying meshes/camera-beam.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.059s] copying meshes/wheel_right_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.060s] copying meshes/ark_enclosure.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.063s] copying meshes/sick-lms1xx-upright-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.066s] copying meshes/rotacastor_left_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.067s] copying meshes/velodyne_tower.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.070s] copying meshes/bridge-plate.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.097s] copying meshes/camera-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.102s] copying meshes/accessory_fender.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.106s] copying meshes/stereo-camera-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.108s] copying meshes/wibotic_bumper.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.110s] copying meshes/jackal-wheel.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.114s] copying meshes/sick-lms1xx-inverted-bracket.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.116s] copying meshes/jackal-fender.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.117s] copying meshes/chassis_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.118s] copying meshes/stereo-camera-beam.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.119s] copying meshes/kinect_mount.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.122s] copying meshes/chassis_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.124s] copying meshes/rotacastor_right_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.125s] copying meshes/jackal-base.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.126s] copying meshes/top_plate.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.128s] copying meshes/hokuyo_utm30.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.135s] copying meshes/jackal-fenders.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.137s] copying meshes/novatel-smart6.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.138s] copying meshes/internal_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.140s] copying meshes/lift_link.dae -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.144s] copying meshes/extrusion.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.145s] copying meshes/hokuyo_ust10.stl -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.147s] copying meshes/wheel_left_link.STL -> /home/yektapanj/WareBotSim/install/warebotsim/share/warebotsim/meshes
+[2.148s] running install_egg_info
+[2.168s] Copying ../../build/warebotsim/warebotsim.egg-info to /home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages/warebotsim-0.0.0-py3.12.egg-info
+[2.175s] running install_scripts
+[2.308s] Installing fulfill_order_server script to /home/yektapanj/WareBotSim/install/warebotsim/lib/warebotsim
+[2.308s] Installing order_manager script to /home/yektapanj/WareBotSim/install/warebotsim/lib/warebotsim
+[2.308s] Installing state_publisher script to /home/yektapanj/WareBotSim/install/warebotsim/lib/warebotsim
+[2.308s] writing list of installed files to '/home/yektapanj/WareBotSim/build/warebotsim/install.log'
+[2.356s] Invoked command in '/home/yektapanj/WareBotSim/src/warebotsim' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/yektapanj/WareBotSim/build/warebotsim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yektapanj/WareBotSim/install/warebotsim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/warebotsim build --build-base /home/yektapanj/WareBotSim/build/warebotsim/build install --record /home/yektapanj/WareBotSim/build/warebotsim/install.log --single-version-externally-managed install_data --force

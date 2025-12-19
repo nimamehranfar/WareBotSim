@@ -24,14 +24,16 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'use_sim_time',
             default_value='false',
-            description='Use simulation (Gazebo) clock if true'),
+            description='Use simulation (Gazebo) clock if true'
+        ),
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
             name='robot_state_publisher',
             output='screen',
             parameters=[{'use_sim_time': use_sim_time, 'robot_description': robot_description}],
-            arguments=[urdf]),
+            arguments=[urdf]
+        ),
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
@@ -59,5 +61,24 @@ def generate_launch_description():
             package='warebotsim',
             executable='state_publisher',
             name='state_publisher',
-            output='screen'),
+            output='screen'
+        ),
+        Node(
+            package='warebotsim',
+            executable='fulfill_order_server',
+            name='fulfill_order_server',
+            output='screen',
+        ),
+        Node(
+            package='warebotsim',
+            executable='order_manager',
+            name='order_manager',
+            namespace='warehouse',
+            output='screen',
+            parameters=[{
+                'shelf_ids': [1],
+                'delivery_ids': [1],
+            }],
+        ),
+
     ])

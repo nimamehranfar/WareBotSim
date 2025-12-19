@@ -1,0 +1,7 @@
+int32 shelf_id
+int32 delivery_id
+string package_id
+---
+bool accepted
+int32 order_id
+string message

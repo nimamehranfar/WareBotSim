@@ -1,0 +1,10 @@
+int32 order_id
+int32 shelf_id
+int32 delivery_id
+string package_id
+---
+bool success
+string message
+---
+string stage
+float32 progress

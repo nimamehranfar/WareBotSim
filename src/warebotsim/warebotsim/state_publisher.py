@@ -4,10 +4,14 @@ from geometry_msgs.msg import Twist
 from tf2_ros import TransformBroadcaster, TransformStamped
 from sensor_msgs.msg import JointState
 import math
+from nav_msgs.msg import Odometry
+
+
 
 class StatePublisher(Node):
     def __init__(self):
         super().__init__('state_publisher')
+        self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
 
         # Transform publisher
         self.br = TransformBroadcaster(self)
@@ -59,7 +63,7 @@ class StatePublisher(Node):
         # --- TF: odom -> base_link ---
         t = TransformStamped()
         t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = 'world'
+        t.header.frame_id = 'odom'
         t.child_frame_id = 'base_link'
 
         t.transform.translation.x = self.x
@@ -72,6 +76,21 @@ class StatePublisher(Node):
         t.transform.rotation.w = math.cos(self.yaw / 2.0)
 
         self.br.sendTransform(t)
+
+        odom = Odometry()
+        odom.header.stamp = self.get_clock().now().to_msg()
+        odom.header.frame_id = 'odom'
+        odom.child_frame_id = 'base_link'
+
+        odom.pose.pose.position.x = self.x
+        odom.pose.pose.position.y = self.y
+        odom.pose.pose.orientation = self.orientation_msg
+
+        odom.twist.twist.linear.x = self.v
+        odom.twist.twist.angular.z = self.w
+
+        self.odom_pub.publish(odom)
+
 
         # --- Joint states ---
         js = JointState()

@@ -1,0 +1,418 @@
+<sdf version='1.12'>
+  <model name='jackal'>
+    <link name='base_link'>
+      <inertial>
+        <pose>0.011998160637645619 0.0019996934396076028 0.066989730226854685 0 0 0</pose>
+        <mass>6.524</mass>
+        <inertia>
+          <ixx>0.31360449331131213</ixx>
+          <ixy>-0.00080002399632127534</ixy>
+          <ixz>0.016399196123237279</ixz>
+          <iyy>0.39220463328985289</iyy>
+          <iyz>-0.00090013397946045362</iyz>
+          <izz>0.44850014897731449</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_fixed_joint_lump__chassis_link_collision'>
+        <pose>0 0 0.091999999999999998 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.41999999999999998 0.31 0.184</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='base_link_fixed_joint_lump__chassis_link_visual'>
+        <pose>0 0 -0.065500000000000003 1.57079632679 -5.5511151231257827e-17 1.57079632679</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-base.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+      <visual name='base_link_fixed_joint_lump__front_fender_link_visual_1'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-fender.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+          <ambient>1 1 0 1</ambient>
+        </material>
+      </visual>
+      <visual name='base_link_fixed_joint_lump__navsat_link_visual_2'>
+        <pose>-0.17999999999999999 0.126 0.1895 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.016</length>
+            <radius>0.025999999999999999</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.187500015 0.187500015 0.187500015 1</diffuse>
+          <ambient>0.187500015 0.187500015 0.187500015 1</ambient>
+        </material>
+      </visual>
+      <visual name='base_link_fixed_joint_lump__rear_fender_link_visual_3'>
+        <pose>0 0 0 0 0 -3.1415926535895871</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-fender.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+          <ambient>1 1 0 1</ambient>
+        </material>
+      </visual>
+      <visual name='base_link_fixed_joint_lump__ee_link_visual_4'>
+        <pose>0.20000000000000001 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.050000000000000003</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+          <ambient>1 0 0 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='front_left_wheel' type='revolute'>
+      <pose relative_to='base_link'>0.13100000000000001 0.18779499999999999 0.034500000000000003 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>front_left_wheel_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>10000</effort>
+          <velocity>1000</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='front_left_wheel_link'>
+      <pose relative_to='front_left_wheel'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0012999999999999999</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0023999999999999998</iyy>
+          <iyz>0</iyz>
+          <izz>0.0012999999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='front_left_wheel_link_collision'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.098000000000000004</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='front_left_wheel_link_visual'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-wheel.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.187500015 0.187500015 0.187500015 1</diffuse>
+          <ambient>0.187500015 0.187500015 0.187500015 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='front_right_wheel' type='revolute'>
+      <pose relative_to='base_link'>0.13100000000000001 -0.18779499999999999 0.034500000000000003 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>front_right_wheel_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>10000</effort>
+          <velocity>1000</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='front_right_wheel_link'>
+      <pose relative_to='front_right_wheel'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0012999999999999999</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0023999999999999998</iyy>
+          <iyz>0</iyz>
+          <izz>0.0012999999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='front_right_wheel_link_collision'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.098000000000000004</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='front_right_wheel_link_visual'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-wheel.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.187500015 0.187500015 0.187500015 1</diffuse>
+          <ambient>0.187500015 0.187500015 0.187500015 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rear_left_wheel' type='revolute'>
+      <pose relative_to='base_link'>-0.13100000000000001 0.18779499999999999 0.034500000000000003 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rear_left_wheel_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>10000</effort>
+          <velocity>1000</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rear_left_wheel_link'>
+      <pose relative_to='rear_left_wheel'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.47699999999999998</mass>
+        <inertia>
+          <ixx>0.0012999999999999999</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0023999999999999998</iyy>
+          <iyz>0</iyz>
+          <izz>0.0012999999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='rear_left_wheel_link_collision'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.098000000000000004</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rear_left_wheel_link_visual'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-wheel.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.187500015 0.187500015 0.187500015 1</diffuse>
+          <ambient>0.187500015 0.187500015 0.187500015 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='rear_right_wheel' type='revolute'>
+      <pose relative_to='base_link'>-0.13100000000000001 -0.18779499999999999 0.034500000000000003 0 0 0</pose>
+      <parent>base_link</parent>
+      <child>rear_right_wheel_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>10000</effort>
+          <velocity>1000</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='rear_right_wheel_link'>
+      <pose relative_to='rear_right_wheel'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.47699999999999998</mass>
+        <inertia>
+          <ixx>0.0012999999999999999</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0023999999999999998</iyy>
+          <iyz>0</iyz>
+          <izz>0.0012999999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='rear_right_wheel_link_collision'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.040000000000000001</length>
+            <radius>0.098000000000000004</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='rear_right_wheel_link_visual'>
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://warebotsim/meshes/jackal-wheel.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.187500015 0.187500015 0.187500015 1</diffuse>
+          <ambient>0.187500015 0.187500015 0.187500015 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <link name="lidar_link">
+      <!-- Put it slightly above base_link -->
+      <pose relative_to="base_link">0.20 0 0.25 0 0 0</pose>
+
+      <sensor name="lidar" type="gpu_lidar">
+        <pose>0 0 0 0 0 0</pose>
+        <topic>scan</topic>
+        <update_rate>10</update_rate>
+
+        <gpu_lidar>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal>
+          <range>
+            <min>0.10</min>
+            <max>15.0</max>
+            <resolution>0.01</resolution>
+          </range>
+        </gpu_lidar>
+      </sensor>
+    </link>
+
+    <frame name='front_fender_joint' attached_to='chassis_link'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='front_fender_link' attached_to='front_fender_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='imu_joint' attached_to='chassis_link'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='imu_link' attached_to='imu_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='front_mount_joint' attached_to='mid_mount'>
+      <pose>0.12 0 0 0 0 0</pose>
+    </frame>
+    <frame name='front_mount' attached_to='front_mount_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='rear_mount_joint' attached_to='mid_mount'>
+      <pose>-0.12 0 0 0 0 0</pose>
+    </frame>
+    <frame name='rear_mount' attached_to='rear_mount_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='mid_mount_joint' attached_to='chassis_link'>
+      <pose>0 0 0.184 0 0 0</pose>
+    </frame>
+    <frame name='mid_mount' attached_to='mid_mount_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='navsat_joint' attached_to='chassis_link'>
+      <pose>-0.17999999999999999 0.126 0.18149999999999999 0 0 0</pose>
+    </frame>
+    <frame name='navsat_link' attached_to='navsat_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='rear_fender_joint' attached_to='chassis_link'>
+      <pose>0 0 0 0 0 -3.1415926535895871</pose>
+    </frame>
+    <frame name='rear_fender_link' attached_to='rear_fender_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='base_link_joint' attached_to='base_link'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='chassis_link' attached_to='base_link_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='ee_joint' attached_to='base_link'>
+      <pose>0.20000000000000001 0 0 0 0 0</pose>
+    </frame>
+    <frame name='ee_link' attached_to='ee_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>front_left_wheel_joint</left_joint>
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>front_right_wheel_joint</right_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+
+      <!-- Jackal wheel geometry from your URDF: radius = 0.098 -->
+      <wheel_radius>0.098</wheel_radius>
+
+      <!-- Left wheel y = +0.187795, right wheel y = -0.187795  => separation ≈ 0.37559 -->
+      <wheel_separation>0.37559</wheel_separation>
+
+      <!-- Use Gazebo Transport topic for cmd_vel -->
+      <topic>cmd_vel</topic>
+
+      <!-- Publish odometry inside Gazebo -->
+      <odom_topic>odom</odom_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+
+  </model>
+</sdf>

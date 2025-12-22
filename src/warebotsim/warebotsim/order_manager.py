@@ -1,7 +1,9 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-
+from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+import math
 from warebotsim_interfaces.srv import CreateOrder
 from warebotsim_interfaces.action import FulfillOrder
 
@@ -13,6 +15,9 @@ class OrderManager(Node):
         # Parameters: numbered shelves/deliveries (start with [1] and scale later)
         self.declare_parameter('shelf_ids', [1])
         self.declare_parameter('delivery_ids', [1])
+
+        self.static_tf_broadcaster = StaticTransformBroadcaster(self)
+        self.publish_static_frames()
 
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
@@ -90,6 +95,34 @@ class OrderManager(Node):
     def _on_result(self, future):
         result = future.result().result
         self.get_logger().info(f"[Robot result] success={result.success} msg='{result.message}'")
+
+    def publish_static_frames(self):
+        def send(parent, child, x, y, z, yaw):
+            t = TransformStamped()
+            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.frame_id = parent
+            t.child_frame_id = child
+            t.transform.translation.x = float(x)
+            t.transform.translation.y = float(y)
+            t.transform.translation.z = float(z)
+            t.transform.rotation.z = math.sin(yaw / 2.0)
+            t.transform.rotation.w = math.cos(yaw / 2.0)
+            self.static_tf_broadcaster.sendTransform(t)
+
+        # LiDAR mount (must match SDF)
+        send('base_link', 'lidar_link', 0.20, 0.0, 0.25, 0.0)
+
+        # World alignment
+        send('map', 'world', 0.0, 0.0, 0.0, 0.0)
+
+        # Shelves (match warehouse_world.sdf exactly)
+        send('world', 'shelf_1',  2.0,  0.0, 1.0, 0.0)
+        send('world', 'shelf_2',  2.0, -2.0, 1.0, 0.0)
+
+        # Delivery points
+        send('world', 'delivery_1', -4.0,  0.0, 0.025, 0.0)
+        send('world', 'delivery_2', -4.0, -2.0, 0.025, 0.0)
+
 
 
 def main():

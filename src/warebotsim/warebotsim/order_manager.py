@@ -1,9 +1,11 @@
+import math
+
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from geometry_msgs.msg import TransformStamped
-import math
+
 from warebotsim_interfaces.srv import CreateOrder
 from warebotsim_interfaces.action import FulfillOrder
 
@@ -24,14 +26,14 @@ class OrderManager(Node):
 
         self._next_order_id = 1
 
-        # Service: the ONLY “user command”
+        # Service: user command entry-point
         self._srv = self.create_service(
             CreateOrder,
             '/warehouse/create_order',
             self._handle_create_order
         )
 
-        # Action client: dispatch work to the robot
+        # Action client: dispatch to robot
         self._ac = ActionClient(self, FulfillOrder, '/robot/fulfill_order')
 
         self.get_logger().info(
@@ -59,7 +61,6 @@ class OrderManager(Node):
 
         package_id = request.package_id.strip() or f"pkg_{order_id:03d}"
 
-        # Dispatch asynchronously (service stays short)
         goal = FulfillOrder.Goal()
         goal.order_id = order_id
         goal.shelf_id = shelf_id
@@ -105,24 +106,29 @@ class OrderManager(Node):
             t.transform.translation.x = float(x)
             t.transform.translation.y = float(y)
             t.transform.translation.z = float(z)
+            t.transform.rotation.x = 0.0
+            t.transform.rotation.y = 0.0
             t.transform.rotation.z = math.sin(yaw / 2.0)
             t.transform.rotation.w = math.cos(yaw / 2.0)
             self.static_tf_broadcaster.sendTransform(t)
 
-        # LiDAR mount (must match SDF)
+        # LiDAR mount (matches model.sdf pose for lidar_link)
         send('base_link', 'lidar_link', 0.20, 0.0, 0.25, 0.0)
 
-        # World alignment
+        # IMPORTANT: ros_gz_bridge produces LaserScan frame_id like "jackal/lidar_link/lidar"
+        # SLAM Toolbox must be able to transform scan frame -> base_link.
+        send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.25, 0.0)
+
+        # World alignment (keep your convention)
         send('map', 'world', 0.0, 0.0, 0.0, 0.0)
 
-        # Shelves (match warehouse_world.sdf exactly)
+        # Shelves (match warehouse_world.sdf)
         send('world', 'shelf_1',  2.0,  0.0, 1.0, 0.0)
         send('world', 'shelf_2',  2.0, -2.0, 1.0, 0.0)
 
         # Delivery points
         send('world', 'delivery_1', -4.0,  0.0, 0.025, 0.0)
         send('world', 'delivery_2', -4.0, -2.0, 0.025, 0.0)
-
 
 
 def main():

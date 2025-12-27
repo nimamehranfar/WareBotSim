@@ -9,8 +9,6 @@ class StatePublisher(Node):
     def __init__(self):
         super().__init__('state_publisher')
 
-        self.declare_parameter('use_sim_time', True)
-
         # Incoming odom topic from Gazebo
         self.odom_topic = '/odom'
 

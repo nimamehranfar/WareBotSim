@@ -14,26 +14,24 @@ class OrderManager(Node):
     def __init__(self):
         super().__init__('order_manager')
 
-        # Parameters: numbered shelves/deliveries (start with [1] and scale later)
+        # Parameters: numbered shelves/deliveries
         self.declare_parameter('shelf_ids', [1])
         self.declare_parameter('delivery_ids', [1])
-
-        self.static_tf_broadcaster = StaticTransformBroadcaster(self)
-        self.publish_static_frames()
 
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
 
+        self.static_tf_broadcaster = StaticTransformBroadcaster(self)
+        self._publish_static_frames()
+
         self._next_order_id = 1
 
-        # Service: user command entry-point
         self._srv = self.create_service(
             CreateOrder,
             '/warehouse/create_order',
             self._handle_create_order
         )
 
-        # Action client: dispatch to robot
         self._ac = ActionClient(self, FulfillOrder, '/robot/fulfill_order')
 
         self.get_logger().info(
@@ -97,36 +95,43 @@ class OrderManager(Node):
         result = future.result().result
         self.get_logger().info(f"[Robot result] success={result.success} msg='{result.message}'")
 
-    def publish_static_frames(self):
+    def _publish_static_frames(self):
         def send(parent, child, x, y, z, yaw):
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = parent
             t.child_frame_id = child
+
             t.transform.translation.x = float(x)
             t.transform.translation.y = float(y)
             t.transform.translation.z = float(z)
+
+            # Only yaw needed for our fixed frames
             t.transform.rotation.x = 0.0
             t.transform.rotation.y = 0.0
             t.transform.rotation.z = math.sin(yaw / 2.0)
             t.transform.rotation.w = math.cos(yaw / 2.0)
+
             self.static_tf_broadcaster.sendTransform(t)
 
-        # LiDAR mount (matches model.sdf pose for lidar_link)
+        # --- Base footprint (slam_toolbox / nav2 often use this) ---
+        # Keep it aligned with base_link (planar robot)
+        send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
+
+        # --- LiDAR mount (must match model.sdf pose) ---
         send('base_link', 'lidar_link', 0.20, 0.0, 0.25, 0.0)
 
-        # IMPORTANT: ros_gz_bridge produces LaserScan frame_id like "jackal/lidar_link/lidar"
-        # SLAM Toolbox must be able to transform scan frame -> base_link.
+        # --- Gazebo-bridged scan frame ---
+        # Your scan frame has been seen as "jackal/lidar_link/lidar".
+        # slam_toolbox must be able to transform scan_frame -> base_(footprint/link).
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.25, 0.0)
 
-        # World alignment (keep your convention)
+        # --- World alignment + semantic frames ---
         send('map', 'world', 0.0, 0.0, 0.0, 0.0)
 
-        # Shelves (match warehouse_world.sdf)
         send('world', 'shelf_1',  2.0,  0.0, 1.0, 0.0)
         send('world', 'shelf_2',  2.0, -2.0, 1.0, 0.0)
 
-        # Delivery points
         send('world', 'delivery_1', -4.0,  0.0, 0.025, 0.0)
         send('world', 'delivery_2', -4.0, -2.0, 0.025, 0.0)
 

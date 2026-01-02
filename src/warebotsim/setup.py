@@ -33,6 +33,7 @@ setup(
     entry_points={
         'console_scripts': [
             'state_publisher = warebotsim.state_publisher:main',
+            'static_frames = warebotsim.static_frames:main',
             'order_manager = warebotsim.order_manager:main',
             'fulfill_order_server = warebotsim.fulfill_order_server:main',
         ],

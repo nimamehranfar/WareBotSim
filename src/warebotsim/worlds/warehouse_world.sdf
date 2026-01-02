@@ -14,15 +14,14 @@
       <render_engine>ogre2</render_engine>
     </plugin>
 
-    <!-- Light -->
+    <!-- Light (top-down, no shadows) -->
     <light name="sun_light" type="directional">
       <pose>0 0 10 0 0 0</pose>
-      <cast_shadows>true</cast_shadows>
-
+      <cast_shadows>false</cast_shadows>
       <diffuse>1 1 1 1</diffuse>
       <specular>0.2 0.2 0.2 1</specular>
-
-      <direction>-0.5 0.1 -1</direction>
+      <!-- straight down -->
+      <direction>0 0 -1</direction>
       <attenuation>
         <range>100</range>
         <constant>0.9</constant>
@@ -30,148 +29,210 @@
         <quadratic>0.001</quadratic>
       </attenuation>
     </light>
+
     <scene>
-        <ambient>0.3 0.3 0.3 1</ambient>
-        <background>0.7 0.7 0.7 1</background>
+      <ambient>0.45 0.45 0.45 1</ambient>
+      <background>0.75 0.75 0.75 1</background>
+      <shadows>false</shadows>
     </scene>
 
-    <!-- Floor -->
+    <!-- =========================
+         SIZES (smaller warehouse)
+         =========================
+         Floor: 7 x 7
+         Walls: length 7, height 2.0
+         Shelves: 0.8 x 0.3 x 1.4
+         Deliveries: cylinder height 1.4 (same as shelf height)
+    -->
+
+    <!-- Floor (opaque) -->
     <model name="floor">
       <static>true</static>
       <pose>0 0 -0.01 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
-            <box><size>10 10 0.02</size></box>
+            <box><size>7 7 0.02</size></box>
           </geometry>
         </collision>
         <visual name="visual">
+          <cast_shadows>false</cast_shadows>
           <geometry>
-            <box><size>10 10 0.02</size></box>
+            <box><size>7 7 0.02</size></box>
           </geometry>
           <material>
             <ambient>0.9 0.9 0.9 1</ambient>
             <diffuse>0.9 0.9 0.9 1</diffuse>
-        </material>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Walls -->
+    <!-- Walls (70% transparent => alpha 0.3) -->
+    <!-- Half-size = 3.5 -->
     <model name="wall_back">
       <static>true</static>
-      <pose>0 5 1.25 0 0 0</pose>
+      <pose>0 3.5 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>10 0.1 2.5</size></box></geometry>
+          <geometry><box><size>7 0.1 2.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>10 0.1 2.5</size></box></geometry>
-          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>7 0.1 2.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 0.3</ambient>
+            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
     <model name="wall_front">
       <static>true</static>
-      <pose>0 -5 1.25 0 0 0</pose>
+      <pose>0 -3.5 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>10 0.1 2.5</size></box></geometry>
+          <geometry><box><size>7 0.1 2.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>10 0.1 2.5</size></box></geometry>
-          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>7 0.1 2.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 0.3</ambient>
+            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
     <model name="wall_left">
       <static>true</static>
-      <pose>-5 0 1.25 0 0 0</pose>
+      <pose>-3.5 0 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>0.1 10 2.5</size></box></geometry>
+          <geometry><box><size>0.1 7 2.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>0.1 10 2.5</size></box></geometry>
-          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>0.1 7 2.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 0.3</ambient>
+            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
     <model name="wall_right">
       <static>true</static>
-      <pose>5 0 1.25 0 0 0</pose>
+      <pose>3.5 0 1.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>0.1 10 2.5</size></box></geometry>
+          <geometry><box><size>0.1 7 2.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>0.1 10 2.5</size></box></geometry>
-          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>0.1 7 2.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 0.3</ambient>
+            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Shelves -->
+    <!-- Shelves (smaller, 70% transparent) -->
     <model name="shelf_1">
       <static>true</static>
-      <pose>2 0 1.0 0 0 0</pose>
+      <pose>1.6 0 0.7 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.2 0.4 2.0</size></box></geometry>
+          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.2 0.4 2.0</size></box></geometry>
-          <material><ambient>0.9 0.7 0.2 1</ambient><diffuse>0.9 0.7 0.2 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
+          <material>
+            <ambient>0.9 0.7 0.2 0.3</ambient>
+            <diffuse>0.9 0.7 0.2 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
     <model name="shelf_2">
       <static>true</static>
-      <pose>2 -2 1.0 0 0 0</pose>
+      <pose>1.6 -1.4 0.7 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>1.2 0.4 2.0</size></box></geometry>
+          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>1.2 0.4 2.0</size></box></geometry>
-          <material><ambient>0.9 0.7 0.2 1</ambient><diffuse>0.9 0.7 0.2 1</diffuse></material>
+          <cast_shadows>false</cast_shadows>
+          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
+          <material>
+            <ambient>0.9 0.7 0.2 0.3</ambient>
+            <diffuse>0.9 0.7 0.2 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Delivery points (visual markers) -->
+    <!-- Delivery points (tall columns, same height as shelves, 70% transparent) -->
     <model name="delivery_1">
       <static>true</static>
-      <pose>-4 0 0.025 0 0 0</pose>
+      <!-- center at z = 0.7 to make height 1.4 sit on floor -->
+      <pose>-2.6 0 0.7 0 0 0</pose>
       <link name="link">
-        <visual name="visual">
+        <collision name="collision">
           <geometry>
             <cylinder>
-              <radius>0.25</radius>
-              <length>0.05</length>
+              <radius>0.18</radius>
+              <length>1.4</length>
             </cylinder>
           </geometry>
-          <material><ambient>0.1 0.8 0.1 1</ambient><diffuse>0.1 0.8 0.1 1</diffuse></material>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <cylinder>
+              <radius>0.18</radius>
+              <length>1.4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 0.3</ambient>
+            <diffuse>0.1 0.8 0.1 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>
 
     <model name="delivery_2">
       <static>true</static>
-      <pose>-4 -2 0.025 0 0 0</pose>
+      <pose>-2.6 -1.4 0.7 0 0 0</pose>
       <link name="link">
-        <visual name="visual">
+        <collision name="collision">
           <geometry>
             <cylinder>
-              <radius>0.25</radius>
-              <length>0.05</length>
+              <radius>0.18</radius>
+              <length>1.4</length>
             </cylinder>
           </geometry>
-          <material><ambient>0.1 0.8 0.1 1</ambient><diffuse>0.1 0.8 0.1 1</diffuse></material>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <cylinder>
+              <radius>0.18</radius>
+              <length>1.4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 0.3</ambient>
+            <diffuse>0.1 0.8 0.1 0.3</diffuse>
+          </material>
         </visual>
       </link>
     </model>

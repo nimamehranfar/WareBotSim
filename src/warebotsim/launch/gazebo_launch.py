@@ -50,7 +50,7 @@ def generate_launch_description():
                 '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
             ],
             output='screen',
-            parameters=[{'use_sim_time': use_sim_time}],
+            parameters=[{'use_sim_time': True, 'use_nav2': True}],
             respawn=True,
             respawn_delay=1.0,
         ),

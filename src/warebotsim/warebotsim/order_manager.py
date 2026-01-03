@@ -14,12 +14,18 @@ class OrderManager(Node):
     def __init__(self):
         super().__init__('order_manager')
 
-        # Parameters: numbered shelves/deliveries
-        self.declare_parameter('shelf_ids', [1])
-        self.declare_parameter('delivery_ids', [1])
+        # IDs in the world
+        self.declare_parameter('shelf_ids', [1, 2])
+        self.declare_parameter('delivery_ids', [1, 2])
 
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
+
+        # Approach offsets (meters)
+        # shelves are at x=1.6; approach from west (x - 0.8) facing +x
+        # deliveries are at x=-2.6; approach from east (x + 0.8) facing -x
+        self.declare_parameter('shelf_approach_dx', -0.8)
+        self.declare_parameter('delivery_approach_dx', +0.8)
 
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
         self._publish_static_frames()
@@ -106,7 +112,6 @@ class OrderManager(Node):
             t.transform.translation.y = float(y)
             t.transform.translation.z = float(z)
 
-            # Only yaw needed for our fixed frames
             t.transform.rotation.x = 0.0
             t.transform.rotation.y = 0.0
             t.transform.rotation.z = math.sin(yaw / 2.0)
@@ -114,26 +119,30 @@ class OrderManager(Node):
 
             self.static_tf_broadcaster.sendTransform(t)
 
-        # --- Base footprint (slam_toolbox / nav2 often use this) ---
-        # Keep it aligned with base_link (planar robot)
+        # Frames needed for Nav2/TF convenience
         send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
-
-        # --- LiDAR mount (must match model.sdf pose) ---
         send('base_link', 'lidar_link', 0.20, 0.0, 0.25, 0.0)
-
-        # --- Gazebo-bridged scan frame ---
-        # Your scan frame has been seen as "jackal/lidar_link/lidar".
-        # slam_toolbox must be able to transform scan_frame -> base_(footprint/link).
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.25, 0.0)
 
-        # --- World alignment + semantic frames ---
-        send('map', 'world', 0.0, 0.0, 0.0, 0.0)
+        shelf_dx = float(self.get_parameter('shelf_approach_dx').value)
+        deliv_dx = float(self.get_parameter('delivery_approach_dx').value)
 
-        send('world', 'shelf_1',  2.0,  0.0, 1.0, 0.0)
-        send('world', 'shelf_2',  2.0, -2.0, 1.0, 0.0)
+        # Exact world object centers (from warehouse_world.sdf)
+        shelves = {
+            1: (1.6, 0.0),
+            2: (1.6, -1.4),
+        }
+        deliveries = {
+            1: (-2.6, 0.0),
+            2: (-2.6, -1.4),
+        }
 
-        send('world', 'delivery_1', -4.0,  0.0, 0.025, 0.0)
-        send('world', 'delivery_2', -4.0, -2.0, 0.025, 0.0)
+        # Publish Nav2 target frames in MAP frame (2D z=0)
+        for sid, (x, y) in shelves.items():
+            send('map', f'shelf_{sid}', x + shelf_dx, y, 0.0, 0.0)  # face +x
+
+        for did, (x, y) in deliveries.items():
+            send('map', f'delivery_{did}', x + deliv_dx, y, 0.0, math.pi)  # face -x
 
 
 def main():

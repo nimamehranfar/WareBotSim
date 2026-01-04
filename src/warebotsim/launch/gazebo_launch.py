@@ -38,9 +38,7 @@ def generate_launch_description():
         ),
 
         # --- Gazebo ↔ ROS bridge ---
-        # REMOVED: '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V'
-        # We rely on the python state_publisher node for odom->base_link TF
-        # to ensure frame names are normalized to 'odom' and 'base_link'.
+        # Start immediately to establish /clock and topics
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
@@ -52,15 +50,15 @@ def generate_launch_description():
                 '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
             ],
             output='screen',
-            parameters=[{'use_sim_time': True, 'use_nav2': True}],
+            parameters=[{'use_sim_time': True}],
             respawn=True,
             respawn_delay=1.0,
         ),
 
         # --- TF from odometry ---
-        # This node reads /odom and publishes 'odom' -> 'base_link'
+        # Start early (1.0s delay instead of 2.0s) to establish TF chain before Nav2
         TimerAction(
-            period=2.0,
+            period=1.0,
             actions=[
                 Node(
                     package='warebotsim',
@@ -90,7 +88,7 @@ def generate_launch_description():
             ],
         ),
 
-        # --- Robot action server (your project already has it) ---
+        # --- Robot action server ---
         TimerAction(
             period=2.0,
             actions=[

@@ -38,7 +38,9 @@ def generate_launch_description():
         ),
 
         # --- Gazebo ↔ ROS bridge ---
-        # Start early so /clock is available quickly.
+        # REMOVED: '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V'
+        # We rely on the python state_publisher node for odom->base_link TF
+        # to ensure frame names are normalized to 'odom' and 'base_link'.
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
@@ -56,7 +58,7 @@ def generate_launch_description():
         ),
 
         # --- TF from odometry ---
-        # Delay a bit so the bridge is already up and publishing /odom.
+        # This node reads /odom and publishes 'odom' -> 'base_link'
         TimerAction(
             period=2.0,
             actions=[

@@ -14,10 +14,19 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     params_file = LaunchConfiguration("params_file")
 
+    pkg_share = get_package_share_directory("warebotsim")
+
     default_params = os.path.join(
-        get_package_share_directory("warebotsim"),
+        pkg_share,
         "config",
         "nav2_params.yaml",
+    )
+
+    # Resolve the installed map file path
+    map_file_path = os.path.join(
+        pkg_share,
+        "maps",
+        "warehouse.yaml"
     )
 
     declare_use_sim_time = DeclareLaunchArgument(
@@ -43,7 +52,7 @@ def generate_launch_description():
                 package="nav2_map_server",
                 plugin="nav2_map_server::MapServer",
                 name="map_server",
-                parameters=[params_file],
+                parameters=[params_file, {'yaml_filename': map_file_path}],
             ),
             ComposableNode(
                 package="nav2_amcl",

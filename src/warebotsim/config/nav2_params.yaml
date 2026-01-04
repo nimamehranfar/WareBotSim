@@ -91,7 +91,8 @@ bt_navigator:
       - nav2_assisted_teleop_cancel_bt_node
       - nav2_drive_on_heading_cancel_bt_node
       - nav2_is_battery_charging_condition_bt_node
-    error_code_names:
+    # FIXED: Renamed from error_code_names to error_code_name_prefixes for Kilted
+    error_code_name_prefixes:
       - compute_path_error_code
       - follow_path_error_code
 

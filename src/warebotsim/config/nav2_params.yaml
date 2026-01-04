@@ -10,7 +10,7 @@ amcl:
     global_frame_id: "map"
     odom_frame_id: "odom"
     robot_model_type: "nav2_amcl::DifferentialMotionModel"
-    transform_tolerance: 2.0
+    transform_tolerance: 1.0
     tf_broadcast: true
     min_particles: 500
     max_particles: 2000
@@ -28,6 +28,7 @@ amcl:
     resample_interval: 1
     save_pose_rate: 0.5
     scan_topic: "scan"
+    # --- ADDED: Auto-initialization ---
     set_initial_pose: true
     initial_pose: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
 
@@ -40,61 +41,32 @@ bt_navigator:
     bt_loop_duration: 10
     default_server_timeout: 20
     enable_groot_monitoring: false
-    # FIXED: Use full path to BT XML file from nav2_bt_navigator package
-    default_nav_to_pose_bt_xml: "/opt/ros/kilted/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
-    default_nav_through_poses_bt_xml: "/opt/ros/kilted/share/nav2_bt_navigator/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
-    plugin_lib_names:
-      - nav2_compute_path_to_pose_action_bt_node
-      - nav2_compute_path_through_poses_action_bt_node
-      - nav2_smooth_path_action_bt_node
-      - nav2_follow_path_action_bt_node
-      - nav2_spin_action_bt_node
-      - nav2_wait_action_bt_node
-      - nav2_assisted_teleop_action_bt_node
-      - nav2_back_up_action_bt_node
-      - nav2_drive_on_heading_bt_node
-      - nav2_clear_costmap_service_bt_node
-      - nav2_is_stuck_condition_bt_node
-      - nav2_goal_reached_condition_bt_node
-      - nav2_goal_updated_condition_bt_node
-      - nav2_globally_updated_goal_condition_bt_node
-      - nav2_is_path_valid_condition_bt_node
-      - nav2_initial_pose_received_condition_bt_node
-      - nav2_reinitialize_global_localization_service_bt_node
-      - nav2_rate_controller_bt_node
-      - nav2_distance_controller_bt_node
-      - nav2_speed_controller_bt_node
-      - nav2_truncate_path_action_bt_node
-      - nav2_truncate_path_local_action_bt_node
-      - nav2_goal_updater_node_bt_node
-      - nav2_recovery_node_bt_node
-      - nav2_pipeline_sequence_bt_node
-      - nav2_round_robin_node_bt_node
-      - nav2_transform_available_condition_bt_node
-      - nav2_time_expired_condition_bt_node
-      - nav2_path_expiring_timer_condition
-      - nav2_distance_traveled_condition_bt_node
-      - nav2_single_trigger_bt_node
-      - nav2_goal_updated_controller_bt_node
-      - nav2_is_battery_low_condition_bt_node
-      - nav2_navigate_through_poses_action_bt_node
-      - nav2_navigate_to_pose_action_bt_node
-      - nav2_remove_passed_goals_action_bt_node
-      - nav2_planner_selector_bt_node
-      - nav2_controller_selector_bt_node
-      - nav2_goal_checker_selector_bt_node
-      - nav2_controller_cancel_bt_node
-      - nav2_path_longer_on_approach_bt_node
-      - nav2_wait_cancel_bt_node
-      - nav2_spin_cancel_bt_node
-      - nav2_back_up_cancel_bt_node
-      - nav2_assisted_teleop_cancel_bt_node
-      - nav2_drive_on_heading_cancel_bt_node
-      - nav2_is_battery_charging_condition_bt_node
-    # FIXED: Renamed from error_code_names to error_code_name_prefixes for Kilted
-    error_code_name_prefixes:
-      - compute_path_error_code
-      - follow_path_error_code
+    # plugin_lib_names REMOVED to fix duplicate ID crash
+    # Default XML paths are passed via launch file overrides
+
+# --- ADDED: Behavior Server Config ---
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/Backup"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    global_frame: "odom"
+    robot_base_frame: "base_link"
+    transform_tolerance: 0.1
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 3.2
 
 controller_server:
   ros__parameters:
@@ -137,7 +109,7 @@ controller_server:
       sim_time: 1.7
       linear_granularity: 0.05
       angular_granularity: 0.025
-      transform_tolerance: 0.5
+      transform_tolerance: 0.2
       xy_goal_tolerance: 0.25
       trans_stopped_velocity: 0.25
       stateful: true
@@ -191,9 +163,6 @@ local_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         inflation_radius: 0.3
         cost_scaling_factor: 3.0
-      
-      # FIXED: Increased transform tolerance for simulation
-      transform_tolerance: 1.0
 
 global_costmap:
   global_costmap:
@@ -231,9 +200,6 @@ global_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         inflation_radius: 0.4
         cost_scaling_factor: 3.0
-      
-      # FIXED: Increased transform tolerance for simulation
-      transform_tolerance: 1.0
 
 planner_server:
   ros__parameters:
@@ -262,6 +228,7 @@ map_server:
     use_sim_time: true
     topic_name: "map"
     frame_id: "map"
+    # yaml_filename is overridden by launch
 
 lifecycle_manager_localization:
   ros__parameters:
@@ -273,4 +240,5 @@ lifecycle_manager_navigation:
   ros__parameters:
     use_sim_time: true
     autostart: true
-    node_names: ["controller_server", "planner_server", "bt_navigator", "waypoint_follower"]
+    # Added behavior_server to this list:
+    node_names: ["controller_server", "planner_server", "behavior_server", "bt_navigator", "waypoint_follower"]

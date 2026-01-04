@@ -22,11 +22,24 @@ def generate_launch_description():
         "nav2_params.yaml",
     )
 
-    # Resolve the installed map file path
+    # --- 1. Resolve Map Path ---
     map_file_path = os.path.join(
         pkg_share,
         "maps",
         "warehouse.yaml"
+    )
+
+    # --- 2. Resolve Behavior Tree XML Paths ---
+    nav2_bt_pkg_share = get_package_share_directory("nav2_bt_navigator")
+    nav_to_pose_xml = os.path.join(
+        nav2_bt_pkg_share,
+        "behavior_trees",
+        "navigate_to_pose_w_replanning_and_recovery.xml"
+    )
+    nav_through_poses_xml = os.path.join(
+        nav2_bt_pkg_share,
+        "behavior_trees",
+        "navigate_through_poses_w_replanning_and_recovery.xml"
     )
 
     declare_use_sim_time = DeclareLaunchArgument(
@@ -52,10 +65,7 @@ def generate_launch_description():
                 package="nav2_map_server",
                 plugin="nav2_map_server::MapServer",
                 name="map_server",
-                parameters=[
-                    params_file,
-                    {'yaml_filename': map_file_path}
-                ],
+                parameters=[params_file, {'yaml_filename': map_file_path}],
             ),
             ComposableNode(
                 package="nav2_amcl",
@@ -75,11 +85,24 @@ def generate_launch_description():
                 name="planner_server",
                 parameters=[params_file],
             ),
+            # --- ADDED: Behavior Server (Required for Spin, Backup, Wait) ---
+            ComposableNode(
+                package="nav2_behaviors",
+                plugin="nav2_behaviors::BehaviorServer",
+                name="behavior_server",
+                parameters=[params_file],
+            ),
             ComposableNode(
                 package="nav2_bt_navigator",
                 plugin="nav2_bt_navigator::BtNavigator",
                 name="bt_navigator",
-                parameters=[params_file],
+                parameters=[
+                    params_file,
+                    {
+                        "default_nav_to_pose_bt_xml": nav_to_pose_xml,
+                        "default_nav_through_poses_bt_xml": nav_through_poses_xml,
+                    }
+                ],
             ),
             ComposableNode(
                 package="nav2_waypoint_follower",

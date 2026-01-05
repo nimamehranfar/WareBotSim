@@ -31,11 +31,15 @@ def generate_launch_description():
 
     # --- 2. Resolve Behavior Tree XML Paths ---
     nav2_bt_pkg_share = get_package_share_directory("nav2_bt_navigator")
+    
+    # USE TREE WITHOUT RECOVERY (Avoids dependency on broken behavior_server)
     nav_to_pose_xml = os.path.join(
         nav2_bt_pkg_share,
         "behavior_trees",
-        "navigate_to_pose_w_replanning_and_recovery.xml"
+        "navigate_to_pose_w_replanning.xml"
     )
+    
+    # Fallback/Default for through-poses
     nav_through_poses_xml = os.path.join(
         nav2_bt_pkg_share,
         "behavior_trees",
@@ -85,13 +89,7 @@ def generate_launch_description():
                 name="planner_server",
                 parameters=[params_file],
             ),
-            # --- ADDED: Behavior Server (Required for Spin, Backup, Wait) ---
-            ComposableNode(
-                package="nav2_behaviors",
-                plugin="nav2_behaviors::BehaviorServer",
-                name="behavior_server",
-                parameters=[params_file],
-            ),
+            # REMOVED: behavior_server (Broken in this setup)
             ComposableNode(
                 package="nav2_bt_navigator",
                 plugin="nav2_bt_navigator::BtNavigator",

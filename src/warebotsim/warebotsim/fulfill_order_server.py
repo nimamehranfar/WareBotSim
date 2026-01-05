@@ -2,6 +2,7 @@ import asyncio
 import math
 import subprocess
 import time
+import sys
 
 import rclpy
 from rclpy.node import Node
@@ -22,17 +23,15 @@ class FulfillOrderServer(Node):
     def __init__(self):
         super().__init__('fulfill_order_server')
 
-        # Default True now: we are in Nav2 phase
         self.declare_parameter('use_nav2', True)
         self.use_nav2 = bool(self.get_parameter('use_nav2').value)
 
+        # Use Reentrant group to allow nested callbacks (ActionClient inside ActionServer)
         self.cb_group = ReentrantCallbackGroup()
 
-        # TF: we will look up target frames in the MAP frame
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Nav2 action client: BT Navigator exposes /navigate_to_pose
         self.nav2_client = ActionClient(
             self, NavigateToPose, '/navigate_to_pose', callback_group=self.cb_group
         )
@@ -55,9 +54,13 @@ class FulfillOrderServer(Node):
     def cancel_callback(self, goal_handle):
         return CancelResponse.ACCEPT
 
+    def _log(self, msg):
+        self.get_logger().info(msg)
+        # Force flush stdout just in case
+        print(f"[FulfillOrderServer] {msg}", flush=True)
+
     def _tf_exists(self, target_frame: str, source_frame: str = 'map') -> bool:
         try:
-            # Check if transform exists
             self.tf_buffer.lookup_transform(source_frame, target_frame, rclpy.time.Time())
             return True
         except (LookupException, ConnectivityException, ExtrapolationException):
@@ -65,59 +68,44 @@ class FulfillOrderServer(Node):
 
     def _pose_from_tf(self, target_frame: str) -> PoseStamped:
         tf = self.tf_buffer.lookup_transform('map', target_frame, rclpy.time.Time())
-
         pose = PoseStamped()
         pose.header.frame_id = 'map'
         pose.header.stamp = self.get_clock().now().to_msg()
-
         pose.pose.position.x = tf.transform.translation.x
         pose.pose.position.y = tf.transform.translation.y
         pose.pose.position.z = 0.0
-
         pose.pose.orientation = tf.transform.rotation
         return pose
 
     def spawn_package_on_robot(self, package_name: str):
         """
-        Spawns a small box directly on top of the robot (teleporting pick-up).
+        Spawns a box model on top of the robot.
         """
         try:
-            # 1. Get current robot position from TF
+            # 1. Get Robot Position
             trans = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             rx = trans.transform.translation.x
             ry = trans.transform.translation.y
-            # Spawn slightly above the base_link so it sits on top (Jackal is ~0.2m high)
-            rz = 0.3 
+            rz = 0.4 # Height
 
-            # 2. Define a simple SDF for a red package
-            sdf_xml = f"""
-            <?xml version='1.0'?>
-            <sdf version='1.6'>
-              <model name='{package_name}'>
-                <pose>{rx} {ry} {rz} 0 0 0</pose>
-                <link name='link'>
-                  <inertial>
-                    <mass>0.1</mass>
-                    <inertia>
-                      <ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
-                      <iyy>0.001</iyy><iyz>0</iyz>
-                      <izz>0.001</izz>
-                    </inertia>
-                  </inertial>
-                  <visual name='visual'>
-                    <geometry><box><size>0.2 0.2 0.2</size></box></geometry>
-                    <material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse></material>
-                  </visual>
-                  <collision name='collision'>
-                    <geometry><box><size>0.2 0.2 0.2</size></box></geometry>
-                  </collision>
-                </link>
-              </model>
-            </sdf>
-            """
+            # 2. Compact SDF
+            sdf_xml = (
+                "<?xml version='1.0'?>"
+                "<sdf version='1.6'>"
+                f"<model name='{package_name}'>"
+                f"<pose>{rx} {ry} {rz} 0 0 0</pose>"
+                "<link name='link'>"
+                "<inertial><mass>0.1</mass><inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia></inertial>"
+                "<visual name='visual'><geometry><box><size>0.2 0.2 0.2</size></box></geometry><material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse></material></visual>"
+                "<collision name='collision'><geometry><box><size>0.2 0.2 0.2</size></box></geometry></collision>"
+                "</link>"
+                "</model>"
+                "</sdf>"
+            )
 
-            # 3. Call Gazebo service using subprocess (reliable in this setup)
-            # We use single quotes for the outer shell command and escape inner quotes if needed
+            # 3. Execute Command
+            self._log(f"Spawning {package_name} at ({rx:.2f}, {ry:.2f})...")
+            
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/create',
                 '--reqtype', 'gz.msgs.EntityFactory',
@@ -125,19 +113,25 @@ class FulfillOrderServer(Node):
                 '--timeout', '2000',
                 '--req', f'sdf: "{sdf_xml}"'
             ]
-            
-            self.get_logger().info(f"Spawning package {package_name} on robot...")
-            subprocess.run(cmd, check=True, capture_output=True)
-            return True
 
+            # Added timeout to prevent hanging
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            
+            if result.returncode == 0:
+                self._log("Spawn command executed successfully.")
+                return True
+            else:
+                self.get_logger().error(f"Spawn command FAILED: {result.stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            self.get_logger().error("Spawn command TIMED OUT.")
+            return False
         except Exception as e:
-            self.get_logger().error(f"Failed to spawn package: {e}")
+            self.get_logger().error(f"Spawn exception: {e}")
             return False
 
     def remove_package(self, package_name: str):
-        """
-        Removes the package from the world (simulating delivery).
-        """
         try:
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/remove',
@@ -146,22 +140,22 @@ class FulfillOrderServer(Node):
                 '--timeout', '2000',
                 '--req', f'name: "{package_name}" type: MODEL'
             ]
-            self.get_logger().info(f"Delivering (removing) package {package_name}...")
-            subprocess.run(cmd, check=True, capture_output=True)
+            self._log(f"Removing package {package_name}...")
+            subprocess.run(cmd, check=True, capture_output=True, timeout=5)
             return True
         except Exception as e:
-            self.get_logger().error(f"Failed to remove package: {e}")
+            self.get_logger().error(f"Remove exception: {e}")
             return False
 
     async def _nav2_go_to_frame(self, goal_handle, target_frame: str, stage_prefix: str,
                                p_min: float, p_max: float) -> tuple[bool, str]:
         if not self.nav2_client.wait_for_server(timeout_sec=2.0):
-            return False, "Nav2 action server not available: /navigate_to_pose"
+            return False, "Nav2 action server not available"
 
         try:
             pose = self._pose_from_tf(target_frame)
         except Exception as e:
-            return False, f"TF Lookup failed for {target_frame}: {e}"
+            return False, f"TF Lookup failed: {e}"
 
         nav_goal = NavigateToPose.Goal()
         nav_goal.pose = pose
@@ -170,15 +164,19 @@ class FulfillOrderServer(Node):
         initial_dist = {'value': None}
 
         def nav_feedback_cb(msg):
-            dist = float(msg.feedback.distance_remaining)
-            if initial_dist['value'] is None:
-                initial_dist['value'] = max(dist, 0.001)
+            # Try to get distance, handle if missing
+            try:
+                dist = float(msg.feedback.distance_remaining)
+                if initial_dist['value'] is None:
+                    initial_dist['value'] = max(dist, 0.001)
+                ratio = 1.0 - min(dist / initial_dist['value'], 1.0)
+                fb.stage = f"{stage_prefix} dist={dist:.2f}m"
+                fb.progress = p_min + (p_max - p_min) * ratio
+                goal_handle.publish_feedback(fb)
+            except:
+                pass
 
-            ratio = 1.0 - min(dist / initial_dist['value'], 1.0)
-            fb.stage = f"{stage_prefix} dist={dist:.2f}m"
-            fb.progress = p_min + (p_max - p_min) * ratio
-            goal_handle.publish_feedback(fb)
-
+        self._log(f"Sending Nav2 goal to {target_frame}...")
         send_future = self.nav2_client.send_goal_async(nav_goal, feedback_callback=nav_feedback_cb)
         nav_goal_handle = await send_future
 
@@ -187,116 +185,91 @@ class FulfillOrderServer(Node):
 
         result_future = nav_goal_handle.get_result_async()
 
-        # Wait while allowing cancel
+        # Wait loop
         while not result_future.done():
             if goal_handle.is_cancel_requested:
-                _ = nav_goal_handle.cancel_goal_async()
-                fb.stage = "canceled"
-                fb.progress = p_min
-                goal_handle.publish_feedback(fb)
+                nav_goal_handle.cancel_goal_async()
                 goal_handle.canceled()
-                return False, "Canceled by client"
-            await asyncio.sleep(0.1)
+                return False, "Canceled"
+            # Increase sleep slightly to yield CPU
+            await asyncio.sleep(0.5)
 
         res = await result_future
         status = res.status
+        self._log(f"Nav2 finished with status: {status}")
 
-        # status codes: 4 is SUCCEEDED
-        if status != 4:
-            return False, f"Nav2 failed (status={status}) while going to {target_frame}"
+        if status != 4: # 4 = SUCCEEDED
+            return False, f"Nav2 failed (status={status})"
 
-        fb.stage = f"{stage_prefix} arrived"
-        fb.progress = p_max
-        goal_handle.publish_feedback(fb)
         return True, "ok"
 
     async def execute_callback(self, goal_handle):
+        self._log("Received Action Goal")
         goal = goal_handle.request
         shelf_frame = f"shelf_{int(goal.shelf_id)}"
         delivery_frame = f"delivery_{int(goal.delivery_id)}"
-        package_name = goal.package_id if goal.package_id else "package_001"
+        package_name = f"box_{goal.order_id}"
 
-        feedback = FulfillOrder.Feedback()
         result = FulfillOrder.Result()
 
-        # 1) Validate targets exist in TF
-        feedback.stage = "validating_targets"
-        feedback.progress = 0.05
-        goal_handle.publish_feedback(feedback)
-
-        if not self._tf_exists(shelf_frame, 'map'):
+        # 1. Validate
+        if not self._tf_exists(shelf_frame) or not self._tf_exists(delivery_frame):
             result.success = False
-            result.message = f"Missing TF frame in map: {shelf_frame}"
-            goal_handle.succeed() # Fail gracefully
-            return result
-
-        if not self._tf_exists(delivery_frame, 'map'):
-            result.success = False
-            result.message = f"Missing TF frame in map: {delivery_frame}"
+            result.message = "TF frame missing"
             goal_handle.succeed()
             return result
 
-        if not self.use_nav2:
-            result.success = False
-            result.message = "use_nav2=false (Nav2 disabled)"
-            goal_handle.succeed()
-            return result
-
-        # 2) Navigate to shelf
-        self.get_logger().info(f"Navigating to {shelf_frame}...")
-        ok, msg = await self._nav2_go_to_frame(
-            goal_handle, shelf_frame, f"navigating_to_{shelf_frame}", 0.10, 0.45
-        )
-        if not ok:
-            result.success = False
-            result.message = msg
-            goal_handle.succeed() # Or abort, but succeed with False success is safer for some clients
-            return result
-
-        # 3) Pick: Spawn package on robot
-        feedback.stage = "picking_package"
-        feedback.progress = 0.50
-        goal_handle.publish_feedback(feedback)
-        
-        self.get_logger().info("Arrived at shelf. Spawning package...")
-        self.spawn_package_on_robot(package_name)
-        time.sleep(1.0) # Wait for spawn
-
-        # 4) Navigate to delivery
-        self.get_logger().info(f"Navigating to {delivery_frame}...")
-        ok, msg = await self._nav2_go_to_frame(
-            goal_handle, delivery_frame, f"navigating_to_{delivery_frame}", 0.55, 0.90
-        )
+        # 2. Go to Shelf
+        self._log(f"Step 1: Navigating to {shelf_frame}")
+        ok, msg = await self._nav2_go_to_frame(goal_handle, shelf_frame, "goto_shelf", 0.0, 0.45)
         if not ok:
             result.success = False
             result.message = msg
             goal_handle.succeed()
             return result
 
-        # 5) Place: Remove package
-        feedback.stage = "delivering_package"
-        feedback.progress = 0.95
-        goal_handle.publish_feedback(feedback)
+        # 3. Pick
+        self._log(f"Step 2: Spawning {package_name}")
+        spawn_success = self.spawn_package_on_robot(package_name)
+        if not spawn_success:
+            self._log("Spawn failed! Check Gazebo logs.")
         
-        self.get_logger().info("Arrived at delivery. Dropping package...")
+        # Wait a bit for physics
+        time.sleep(1.0)
+
+        # 4. Go to Delivery
+        self._log(f"Step 3: Navigating to {delivery_frame}")
+        ok, msg = await self._nav2_go_to_frame(goal_handle, delivery_frame, "goto_delivery", 0.55, 0.90)
+        if not ok:
+            result.success = False
+            result.message = msg
+            goal_handle.succeed()
+            return result
+
+        # 5. Place
+        self._log(f"Step 4: Delivering {package_name}")
         self.remove_package(package_name)
 
         result.success = True
-        result.message = f"Delivered {package_name} from {shelf_frame} to {delivery_frame}"
+        result.message = "Order Complete"
         goal_handle.succeed()
+        self._log("Action Complete.")
         return result
 
 
 def main():
     rclpy.init()
     node = FulfillOrderServer()
-
-    executor = MultiThreadedExecutor(num_threads=2)
+    # Use MultiThreadedExecutor to ensure ActionServer and ActionClient callbacks don't block each other
+    executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
-    executor.spin()
-
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':

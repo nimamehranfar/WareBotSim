@@ -38,7 +38,6 @@ def generate_launch_description():
         ),
 
         # --- Gazebo ↔ ROS bridge ---
-        # Start immediately to establish /clock and topics
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
@@ -47,18 +46,18 @@ def generate_launch_description():
                 '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
                 '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                 '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-                '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+                # FIXED: Change Twist to TwistStamped to match Nav2 output
+                '/cmd_vel@geometry_msgs/msg/TwistStamped]gz.msgs.Twist',
             ],
             output='screen',
-            parameters=[{'use_sim_time': True}],
+            parameters=[{'use_sim_time': True, 'use_nav2': True}],
             respawn=True,
             respawn_delay=1.0,
         ),
 
         # --- TF from odometry ---
-        # Start early (1.0s delay instead of 2.0s) to establish TF chain before Nav2
         TimerAction(
-            period=1.0,
+            period=2.0,
             actions=[
                 Node(
                     package='warebotsim',

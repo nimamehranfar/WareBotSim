@@ -32,12 +32,10 @@ class FulfillOrderServer(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Nav2 client
         self.nav2_client = ActionClient(
             self, NavigateToPose, '/navigate_to_pose', callback_group=self.cb_group
         )
 
-        # Manual velocity publisher for backing up (TwistStamped to match your Bridge config)
         self.vel_pub = self.create_publisher(TwistStamped, '/cmd_vel', 10)
 
         self._as = ActionServer(
@@ -82,11 +80,10 @@ class FulfillOrderServer(Node):
         return pose
 
     def _backup_robot(self, duration=2.0):
-        """Manually reverse the robot to clear obstacles."""
         self._log("Backing up to clear shelf...")
         msg = TwistStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.twist.linear.x = -0.3 # Move backward
+        msg.twist.linear.x = -0.3 
         
         end_time = time.time() + duration
         while time.time() < end_time:
@@ -94,7 +91,6 @@ class FulfillOrderServer(Node):
             self.vel_pub.publish(msg)
             time.sleep(0.1)
         
-        # Stop
         msg.twist.linear.x = 0.0
         self.vel_pub.publish(msg)
         self._log("Backup complete.")
@@ -102,7 +98,7 @@ class FulfillOrderServer(Node):
     def _spawn_package(self, package_id: str, x: float, y: float, z: float) -> bool:
         """Spawn package at specific coordinates."""
         try:
-            # Compact SDF
+            # Compact SDF (Removed newlines for shell safety)
             sdf_xml = (
                 "<?xml version='1.0'?>"
                 "<sdf version='1.6'>"
@@ -143,17 +139,35 @@ class FulfillOrderServer(Node):
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             rx = tf.transform.translation.x
             ry = tf.transform.translation.y
-            # HIGH Z: 0.6m to ensure it is ABOVE the LIDAR scan plane
-            rz = tf.transform.translation.z + 0.6
+            
+            # Jackal Height Analysis:
+            # Base is ~0.2m high. Top plate is ~0.3m.
+            # Sensor tower is at the front.
+            # We place the box at Z=0.45 (safe height)
+            # We offset X by -0.2 (behind center) to avoid the LIDAR tower.
+            
+            # Orientation: Match robot yaw so box aligns
+            q = tf.transform.rotation
+            # Simple conversion to yaw
+            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+            cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
+            
+            offset_x = -0.2 * math.cos(yaw)
+            offset_y = -0.2 * math.sin(yaw)
+            
+            final_x = rx + offset_x
+            final_y = ry + offset_y
+            final_z = tf.transform.translation.z + 0.45
 
-            self._log(f"Teleporting {package_id} to robot ({rx:.2f}, {ry:.2f})...")
+            self._log(f"Teleporting {package_id} to robot rear ({final_x:.2f}, {final_y:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {rx}, y: {ry}, z: {rz}}}'
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: 0, y: 0, z: {q.z}, w: {q.w}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -256,7 +270,7 @@ class FulfillOrderServer(Node):
         # 1. Spawn on Shelf (Before moving)
         try:
             tf = self.tf_buffer.lookup_transform('map', shelf_frame, rclpy.time.Time())
-            # Use EXACT shelf coordinates (removed offset per user request)
+            # USE EXACT SHELF COORDS - do not add offset as per your request
             shelf_x = tf.transform.translation.x
             shelf_y = tf.transform.translation.y
             shelf_z = 1.5 
@@ -281,7 +295,7 @@ class FulfillOrderServer(Node):
         time.sleep(1.0)
 
         # 4. BACK UP (Critical Step to Unstuck)
-        self._backup_robot(duration=2.0)
+        self._backup_robot(duration=2.5) # Increased backup duration
 
         # 5. Go to Delivery
         self._log(f"Step 3: Navigating to {delivery_frame}")

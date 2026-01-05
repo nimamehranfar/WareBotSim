@@ -15,7 +15,7 @@ class StaticFrames(Node):
         #   <pose relative_to="base_link">0.20 0 0.25 0 0 0</pose>
         self.declare_parameter('lidar_x', 0.20)
         self.declare_parameter('lidar_y', 0.0)
-        self.declare_parameter('lidar_z', 0.25)
+        self.declare_parameter('lidar_z', 0.75)
         self.declare_parameter('lidar_yaw', 0.0)
 
         x = float(self.get_parameter('lidar_x').value)

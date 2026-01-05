@@ -324,40 +324,59 @@
         </material>
       </visual>
     </link>
+    <link name="lidar_pole_link">
+      <!-- Visual-only mast/pole so the lidar is clearly above carried packages -->
+      <!-- Pole base at roughly the top plate (~0.184m), pole top at lidar height (0.75m) -->
+      <pose relative_to="base_link">0.20 0 0.467 0 0 0</pose>
+
+      <visual name="pole_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.012</radius>
+            <length>0.566</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.10 0.10 0.10 1</ambient>
+          <diffuse>0.10 0.10 0.10 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="lidar_pole_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>lidar_pole_link</child>
+    </joint>
+
     <link name="lidar_link">
-      <!-- Put it slightly above base_link -->
-      <pose relative_to="base_link">0.20 0 0.25 0 0 0</pose>
+      <!-- Raised lidar: scan plane is at z=0.75m in base_link frame -->
+      <pose relative_to="base_link">0.20 0.00 0.75 0 0 0</pose>
+
+      <!-- Small visible housing so the lidar is NOT "invisible" in the sim -->
+      <visual name="lidar_housing_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.040</radius>
+            <length>0.050</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.05 0.05 0.05 1</ambient>
+          <diffuse>0.05 0.05 0.05 1</diffuse>
+        </material>
+        <cast_shadows>false</cast_shadows>
+      </visual>
 
       <sensor name="lidar" type="gpu_lidar">
         <pose>0 0 0 0 0 0</pose>
         <topic>/scan</topic>
         <update_rate>50</update_rate>
-
-        <ray>
-          <scan>
-            <horizontal>
-              <samples>720</samples>
-              <resolution>1</resolution>
-              <min_angle>-3.14159</min_angle>
-              <max_angle>3.14159</max_angle>
-            </horizontal>
-          </scan>
-
-          <range>
-            <min>0.12</min>
-            <max>12.0</max>
-            <resolution>0.01</resolution>
-          </range>
-
-          <noise>
-            <type>gaussian</type>
-            <mean>0.0</mean>
-            <stddev>0.005</stddev>
-          </noise>
-        </ray>
+        ...
       </sensor>
-
     </link>
+
     <joint name="lidar_joint" type="fixed">
       <parent>base_link</parent>
       <child>lidar_link</child>

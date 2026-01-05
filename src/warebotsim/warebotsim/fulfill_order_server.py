@@ -131,7 +131,7 @@ class FulfillOrderServer(Node):
             yaw = math.atan2(siny_cosp, cosy_cosp)
             
             # SAFE POSITION: 0.2m BEHIND center, 0.6m UP (Clear LIDAR)
-            offset_x = -0.2 * math.cos(yaw)
+            offset_x = -0.0 * math.cos(yaw)
             offset_y = -0.2 * math.sin(yaw)
             
             final_x = tf.transform.translation.x + offset_x
@@ -157,6 +157,33 @@ class FulfillOrderServer(Node):
                 return False
         except Exception as e:
             self.get_logger().error(f"Attach exception: {e}")
+            return False
+    
+    def _place_package_at_delivery(self, package_id: str, x: float, y: float, z: float) -> bool:
+        """Teleport package from robot to inside the delivery point."""
+        try:
+            # Place it slightly above the frame origin (z + 0.2) to ensure it doesn't clip into ground
+            final_z = z + 0.2
+            
+            self._log(f"Placing {package_id} at delivery ({x:.2f}, {y:.2f})...")
+            
+            cmd = [
+                'gz', 'service', '-s', '/world/warehouse_world/set_pose',
+                '--reqtype', 'gz.msgs.Pose',
+                '--reptype', 'gz.msgs.Boolean',
+                '--timeout', '2000',
+                '--req', f'name: "{package_id}", position: {{x: {x}, y: {y}, z: {final_z}}} orientation: {{x: 0, y: 0, z: 0, w: 1}}'
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                self._log("Delivery Placement Success!")
+                return True
+            else:
+                self.get_logger().error(f"Delivery Placement Failed: {result.stderr}")
+                return False
+        except Exception as e:
+            self.get_logger().error(f"Delivery Exception: {e}")
             return False
 
     def _backup_robot(self, duration=2.5):
@@ -306,7 +333,7 @@ class FulfillOrderServer(Node):
         # ---------------------------------------------------------
         # 4. BACKUP (CLEAR SHELF)
         # ---------------------------------------------------------
-        self._backup_robot(2.5)
+        self._backup_robot(1.5)
 
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY
@@ -322,8 +349,20 @@ class FulfillOrderServer(Node):
         feedback.stage = "delivering"
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
+
+        # Get delivery coordinates from TF
+        try:
+            tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
+            delivery_x = tf_delivery.transform.translation.x
+            delivery_y = tf_delivery.transform.translation.y
+            delivery_z = tf_delivery.transform.translation.z
+        except Exception as e:
+            self._log(f"Delivery TF Lookup Failed: {e}")
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message="Delivery TF Missing")
         
-        self._remove_package(pkg_id)
+        # self._remove_package(pkg_id)
+        self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
 

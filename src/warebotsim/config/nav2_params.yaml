@@ -95,22 +95,22 @@ controller_server:
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.05
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
-      min_vel_x: -0.26
-      max_vel_x: 0.26
+      min_vel_x: -0.1
+      max_vel_x: 0.3
       max_vel_theta: 1.0
       min_speed_xy: 0.0
       max_speed_xy: 0.26
       min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_theta: -3.2
+      acc_lim_x: 1.0
+      acc_lim_theta: 2.0
+      decel_lim_x: -1.0
+      decel_lim_theta: -2.0
       vx_samples: 20
       vtheta_samples: 20
       sim_time: 1.7

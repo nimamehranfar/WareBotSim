@@ -15,6 +15,7 @@ from nav2_msgs.action import NavigateToPose
 
 from tf2_ros import Buffer, TransformListener
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
+from tf_transformations import quaternion_from_euler
 
 from warebotsim_interfaces.action import FulfillOrder
 
@@ -124,21 +125,23 @@ class FulfillOrderServer(Node):
         try:
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             
-            # Calculate rotation to place box behind robot
+            # Calculate rotation to place box aligned with robot
             q = tf.transform.rotation
             siny_cosp = 2 * (q.w * q.z + q.x * q.y)
             cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
             yaw = math.atan2(siny_cosp, cosy_cosp)
             
-            # SAFE POSITION: 0.2m BEHIND center, 0.6m UP (Clear LIDAR)
-            offset_x = -0.0 * math.cos(yaw)
-            offset_y = -0.2 * math.sin(yaw)
+            # SAFE POSITION: 
+            # -0.1m behind center (Reduced from -0.2 to prevent falling off back)
+            # +0.30m UP (Reduced from +0.5 to reduce drop bounce)
+            offset_x = -0.1 * math.cos(yaw)
+            offset_y = -0.1 * math.sin(yaw)
             
             final_x = tf.transform.translation.x + offset_x
             final_y = tf.transform.translation.y + offset_y
-            final_z = tf.transform.translation.z + 0.6
+            final_z = tf.transform.translation.z + 0.30 
 
-            self._log(f"Teleporting {package_id} to robot SAFE ZONE ({final_x:.2f}, {final_y:.2f}, {final_z:.2f})...")
+            self._log(f"Teleporting {package_id} to robot SAFE ZONE ({final_x:.2f}, {final_y:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
@@ -158,7 +161,7 @@ class FulfillOrderServer(Node):
         except Exception as e:
             self.get_logger().error(f"Attach exception: {e}")
             return False
-    
+
     def _place_package_at_delivery(self, package_id: str, x: float, y: float, z: float) -> bool:
         """Teleport package from robot to inside the delivery point."""
         try:
@@ -204,32 +207,11 @@ class FulfillOrderServer(Node):
         self.vel_pub.publish(msg)
         self._log("Backup complete.")
 
-    def _remove_package(self, package_id: str):
-        try:
-            cmd = [
-                'gz', 'service', '-s', '/world/warehouse_world/remove',
-                '--reqtype', 'gz.msgs.Entity',
-                '--reptype', 'gz.msgs.Boolean',
-                '--timeout', '2000',
-                '--req', f'name: "{package_id}" type: MODEL'
-            ]
-            self._log(f"Delivering (Removing) {package_id}...")
-            subprocess.run(cmd, check=True, capture_output=True, timeout=5)
-            return True
-        except Exception as e:
-            self.get_logger().error(f"Remove exception: {e}")
-            return False
-
-    def _nav2_go_to_frame(self, goal_handle, target_frame: str, stage_prefix: str,
+    def _nav2_go_to_pose(self, goal_handle, pose: PoseStamped, stage_prefix: str,
                           p_min: float, p_max: float) -> tuple[bool, str]:
         
         if not self.nav2_client.wait_for_server(timeout_sec=2.0):
             return False, "Nav2 action server not available"
-
-        try:
-            pose = self._pose_from_tf(target_frame)
-        except Exception as e:
-            return False, f"TF Lookup failed: {e}"
 
         nav_goal = NavigateToPose.Goal()
         nav_goal.pose = pose
@@ -249,7 +231,7 @@ class FulfillOrderServer(Node):
             except:
                 pass
 
-        self._log(f"Sending Nav2 goal to {target_frame}...")
+        self._log(f"Sending Nav2 goal to ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})...")
         
         # Send Goal (Synchronous)
         send_future = self.nav2_client.send_goal_async(nav_goal, feedback_callback=nav_feedback_cb)
@@ -259,7 +241,7 @@ class FulfillOrderServer(Node):
         nav_goal_handle = send_future.result()
 
         if not nav_goal_handle.accepted:
-            return False, f"Nav2 rejected goal to {target_frame}"
+            return False, f"Nav2 rejected goal"
 
         # Wait for Result (Synchronous)
         result_future = nav_goal_handle.get_result_async()
@@ -292,7 +274,7 @@ class FulfillOrderServer(Node):
             return FulfillOrder.Result(success=False, message="TF Missing")
 
         # ---------------------------------------------------------
-        # 1. SPAWN ON SHELF (Before moving)
+        # 1. SPAWN ON SHELF
         # ---------------------------------------------------------
         feedback.stage = "spawning_package"
         feedback.progress = 0.05
@@ -300,12 +282,15 @@ class FulfillOrderServer(Node):
 
         try:
             tf_shelf = self.tf_buffer.lookup_transform('map', shelf_frame, rclpy.time.Time())
-            # EXACT LOGIC YOU REQUESTED: shelf_x + 0.5, Z=1.2
-            shelf_x = tf_shelf.transform.translation.x + 0.5
-            shelf_y = tf_shelf.transform.translation.y
-            shelf_z = 1.2
+            # Shelf spawning offset (inside shelf)
+            shelf_center_x = tf_shelf.transform.translation.x
+            shelf_center_y = tf_shelf.transform.translation.y
             
-            self._spawn_package(pkg_id, shelf_x, shelf_y, shelf_z)
+            spawn_x = shelf_center_x + 0.5
+            spawn_y = shelf_center_y
+            spawn_z = 1.2
+            
+            self._spawn_package(pkg_id, spawn_x, spawn_y, spawn_z)
             time.sleep(1.0)
         except Exception as e:
             self._log(f"Spawn Error: {e}")
@@ -313,10 +298,31 @@ class FulfillOrderServer(Node):
         # ---------------------------------------------------------
         # 2. GO TO SHELF
         # ---------------------------------------------------------
-        ok, msg = self._nav2_go_to_frame(goal_handle, shelf_frame, "goto_shelf", 0.1, 0.45)
-        if not ok:
+        try:
+            # APPROACH POSE: 0.7m in front of shelf center (x - 0.7)
+            # Reduced from 1.2m to get closer
+            approach_pose = PoseStamped()
+            approach_pose.header.frame_id = 'map'
+            approach_pose.header.stamp = self.get_clock().now().to_msg()
+            approach_pose.pose.position.x = shelf_center_x - 0.7 
+            approach_pose.pose.position.y = shelf_center_y
+            approach_pose.pose.position.z = 0.0
+            
+            # Orientation: Face the shelf (Face +X)
+            q = quaternion_from_euler(0, 0, 0) 
+            approach_pose.pose.orientation.x = q[0]
+            approach_pose.pose.orientation.y = q[1]
+            approach_pose.pose.orientation.z = q[2]
+            approach_pose.pose.orientation.w = q[3]
+
+            ok, msg = self._nav2_go_to_pose(goal_handle, approach_pose, "goto_shelf", 0.1, 0.45)
+            if not ok:
+                goal_handle.abort()
+                return FulfillOrder.Result(success=False, message=msg)
+        except Exception as e:
+            self.get_logger().error(f"Navigation Setup Error: {e}")
             goal_handle.abort()
-            return FulfillOrder.Result(success=False, message=msg)
+            return FulfillOrder.Result(success=False, message=str(e))
 
         # ---------------------------------------------------------
         # 3. PICK (ATTACH)
@@ -333,15 +339,21 @@ class FulfillOrderServer(Node):
         # ---------------------------------------------------------
         # 4. BACKUP (CLEAR SHELF)
         # ---------------------------------------------------------
+        # Facing +X, so negative linear.x moves us away (-X)
         self._backup_robot(1.5)
 
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY
         # ---------------------------------------------------------
-        ok, msg = self._nav2_go_to_frame(goal_handle, delivery_frame, "goto_delivery", 0.55, 0.90)
-        if not ok:
-            goal_handle.abort()
-            return FulfillOrder.Result(success=False, message=msg)
+        try:
+            delivery_pose = self._pose_from_tf(delivery_frame)
+            ok, msg = self._nav2_go_to_pose(goal_handle, delivery_pose, "goto_delivery", 0.55, 0.90)
+            if not ok:
+                goal_handle.abort()
+                return FulfillOrder.Result(success=False, message=msg)
+        except Exception as e:
+             goal_handle.abort()
+             return FulfillOrder.Result(success=False, message=f"Delivery Nav Error: {e}")
 
         # ---------------------------------------------------------
         # 6. PLACE (DELIVER)
@@ -349,7 +361,7 @@ class FulfillOrderServer(Node):
         feedback.stage = "delivering"
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
-
+        
         # Get delivery coordinates from TF
         try:
             tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
@@ -360,8 +372,7 @@ class FulfillOrderServer(Node):
             self._log(f"Delivery TF Lookup Failed: {e}")
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message="Delivery TF Missing")
-        
-        # self._remove_package(pkg_id)
+
         self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
@@ -372,8 +383,13 @@ def main():
     node = FulfillOrderServer()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
-    executor.spin()
-    rclpy.shutdown()
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':

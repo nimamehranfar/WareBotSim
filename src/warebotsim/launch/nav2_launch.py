@@ -6,7 +6,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
-from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
 
@@ -28,13 +28,15 @@ def generate_launch_description():
         "warehouse.yaml"
     )
 
-    # Resolve Behavior Tree XML Paths (Using standard one now that behavior server will work)
-    nav2_bt_pkg_share = get_package_share_directory("nav2_bt_navigator")
+    # --- USE CUSTOM LOCAL XML (No Recoveries) ---
     nav_to_pose_xml = os.path.join(
-        nav2_bt_pkg_share,
-        "behavior_trees",
-        "navigate_to_pose_w_replanning_and_recovery.xml"
+        pkg_share,
+        "config",
+        "simple_nav.xml"
     )
+    
+    # Keep standard for through-poses (or create a simple one if needed)
+    nav2_bt_pkg_share = get_package_share_directory("nav2_bt_navigator")
     nav_through_poses_xml = os.path.join(
         nav2_bt_pkg_share,
         "behavior_trees",
@@ -51,15 +53,6 @@ def generate_launch_description():
         "params_file",
         default_value=default_params,
         description="Full path to the Nav2 YAML parameters file",
-    )
-
-    # --- FIX: Run behavior_server as a standalone node to avoid class-loader errors ---
-    behavior_server_node = Node(
-        package='nav2_behaviors',
-        executable='behavior_server',
-        name='behavior_server',
-        output='screen',
-        parameters=[params_file],
     )
 
     nav2_container = ComposableNodeContainer(
@@ -93,7 +86,7 @@ def generate_launch_description():
                 name="planner_server",
                 parameters=[params_file],
             ),
-            # behavior_server removed from here and moved to standalone Node above
+            # NO behavior_server (It crashes on your system)
             ComposableNode(
                 package="nav2_bt_navigator",
                 plugin="nav2_bt_navigator::BtNavigator",
@@ -131,7 +124,6 @@ def generate_launch_description():
         [
             declare_use_sim_time,
             declare_params_file,
-            behavior_server_node, # Added standalone node
             nav2_container,
         ]
     )

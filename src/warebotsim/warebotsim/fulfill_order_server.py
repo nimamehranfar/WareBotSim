@@ -1,4 +1,3 @@
-import asyncio
 import math
 import subprocess
 import time
@@ -27,15 +26,18 @@ class FulfillOrderServer(Node):
         self.declare_parameter('use_nav2', True)
         self.use_nav2 = bool(self.get_parameter('use_nav2').value)
 
+        # Reentrant group allows nested callbacks
         self.cb_group = ReentrantCallbackGroup()
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
+        # Nav2 Client
         self.nav2_client = ActionClient(
             self, NavigateToPose, '/navigate_to_pose', callback_group=self.cb_group
         )
 
+        # Velocity Publisher for manual maneuvers
         self.vel_pub = self.create_publisher(TwistStamped, '/cmd_vel', 10)
 
         self._as = ActionServer(
@@ -79,47 +81,31 @@ class FulfillOrderServer(Node):
         pose.pose.orientation = tf.transform.rotation
         return pose
 
-    def _backup_robot(self, duration=2.0):
-        self._log("Backing up to clear shelf...")
-        msg = TwistStamped()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.twist.linear.x = -0.3 
-        
-        end_time = time.time() + duration
-        while time.time() < end_time:
-            msg.header.stamp = self.get_clock().now().to_msg()
-            self.vel_pub.publish(msg)
-            time.sleep(0.1)
-        
-        msg.twist.linear.x = 0.0
-        self.vel_pub.publish(msg)
-        self._log("Backup complete.")
+    # --- ACTION HELPERS ---
 
     def _spawn_package(self, package_id: str, x: float, y: float, z: float) -> bool:
-        """Spawn package at specific coordinates."""
+        """Spawn package at specific coordinates (Shelf)."""
         try:
-            # Compact SDF (Removed newlines for shell safety)
-            sdf_xml = (
+            # Compact SDF String
+            sdf_content = (
                 "<?xml version='1.0'?>"
                 "<sdf version='1.6'>"
                 f"<model name='{package_id}'>"
                 f"<pose>{x} {y} {z} 0 0 0</pose>"
                 "<link name='link'>"
                 "<inertial><mass>0.5</mass><inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia></inertial>"
-                "<visual name='visual'><geometry><box><size>0.2 0.2 0.2</size></box></geometry><material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse></material></visual>"
-                "<collision name='collision'><geometry><box><size>0.2 0.2 0.2</size></box></geometry></collision>"
-                "</link>"
-                "</model>"
-                "</sdf>"
+                "<collision name='collision'><geometry><box><size>0.15 0.15 0.15</size></box></geometry></collision>"
+                "<visual name='visual'><geometry><box><size>0.15 0.15 0.15</size></box></geometry><material><ambient>0.8 0.3 0.1 1</ambient><diffuse>0.8 0.3 0.1 1</diffuse></material></visual>"
+                "</link></model></sdf>"
             )
 
-            self._log(f"Spawning {package_id} at ({x:.2f}, {y:.2f}, {z:.2f})...")
+            self._log(f"Spawning {package_id} at ({x:.2f}, {y:.2f}, {z:.2f})")
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/create',
                 '--reqtype', 'gz.msgs.EntityFactory',
                 '--reptype', 'gz.msgs.Boolean',
-                '--timeout', '2000',
-                '--req', f'sdf: "{sdf_xml}"'
+                '--timeout', '3000',
+                '--req', f'sdf: "{sdf_content}"'
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -134,33 +120,25 @@ class FulfillOrderServer(Node):
             return False
 
     def _attach_package_to_robot(self, package_id: str) -> bool:
-        """Teleport package from shelf to robot."""
+        """Teleport package from shelf to robot safe zone."""
         try:
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
-            rx = tf.transform.translation.x
-            ry = tf.transform.translation.y
             
-            # Jackal Height Analysis:
-            # Base is ~0.2m high. Top plate is ~0.3m.
-            # Sensor tower is at the front.
-            # We place the box at Z=0.45 (safe height)
-            # We offset X by -0.2 (behind center) to avoid the LIDAR tower.
-            
-            # Orientation: Match robot yaw so box aligns
+            # Calculate rotation to place box behind robot
             q = tf.transform.rotation
-            # Simple conversion to yaw
             siny_cosp = 2 * (q.w * q.z + q.x * q.y)
             cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
             yaw = math.atan2(siny_cosp, cosy_cosp)
             
+            # SAFE POSITION: 0.2m BEHIND center, 0.6m UP (Clear LIDAR)
             offset_x = -0.2 * math.cos(yaw)
             offset_y = -0.2 * math.sin(yaw)
             
-            final_x = rx + offset_x
-            final_y = ry + offset_y
-            final_z = tf.transform.translation.z + 0.45
+            final_x = tf.transform.translation.x + offset_x
+            final_y = tf.transform.translation.y + offset_y
+            final_z = tf.transform.translation.z + 0.6
 
-            self._log(f"Teleporting {package_id} to robot rear ({final_x:.2f}, {final_y:.2f})...")
+            self._log(f"Teleporting {package_id} to robot SAFE ZONE ({final_x:.2f}, {final_y:.2f}, {final_z:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
@@ -181,16 +159,34 @@ class FulfillOrderServer(Node):
             self.get_logger().error(f"Attach exception: {e}")
             return False
 
-    def remove_package(self, package_name: str):
+    def _backup_robot(self, duration=2.5):
+        """Manually drive backward to clear shelf costmap inflation."""
+        self._log("Backing up to clear shelf...")
+        msg = TwistStamped()
+        msg.header.frame_id = 'base_link'
+        msg.twist.linear.x = -0.3 
+        
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            msg.header.stamp = self.get_clock().now().to_msg()
+            self.vel_pub.publish(msg)
+            time.sleep(0.1)
+        
+        # Stop
+        msg.twist.linear.x = 0.0
+        self.vel_pub.publish(msg)
+        self._log("Backup complete.")
+
+    def _remove_package(self, package_id: str):
         try:
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/remove',
                 '--reqtype', 'gz.msgs.Entity',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_name}" type: MODEL'
+                '--req', f'name: "{package_id}" type: MODEL'
             ]
-            self._log(f"Removing package {package_name}...")
+            self._log(f"Delivering (Removing) {package_id}...")
             subprocess.run(cmd, check=True, capture_output=True, timeout=5)
             return True
         except Exception as e:
@@ -199,6 +195,7 @@ class FulfillOrderServer(Node):
 
     def _nav2_go_to_frame(self, goal_handle, target_frame: str, stage_prefix: str,
                           p_min: float, p_max: float) -> tuple[bool, str]:
+        
         if not self.nav2_client.wait_for_server(timeout_sec=2.0):
             return False, "Nav2 action server not available"
 
@@ -227,6 +224,7 @@ class FulfillOrderServer(Node):
 
         self._log(f"Sending Nav2 goal to {target_frame}...")
         
+        # Send Goal (Synchronous)
         send_future = self.nav2_client.send_goal_async(nav_goal, feedback_callback=nav_feedback_cb)
         while not send_future.done():
             time.sleep(0.1)
@@ -236,6 +234,7 @@ class FulfillOrderServer(Node):
         if not nav_goal_handle.accepted:
             return False, f"Nav2 rejected goal to {target_frame}"
 
+        # Wait for Result (Synchronous)
         result_future = nav_goal_handle.get_result_async()
         while not result_future.done():
             if goal_handle.is_cancel_requested:
@@ -254,67 +253,79 @@ class FulfillOrderServer(Node):
 
     def execute_callback(self, goal_handle):
         self._log("Received Action Goal")
-        goal = goal_handle.request
-        shelf_frame = f"shelf_{int(goal.shelf_id)}"
-        delivery_frame = f"delivery_{int(goal.delivery_id)}"
-        package_name = f"box_{goal.order_id}"
-
-        result = FulfillOrder.Result()
+        req = goal_handle.request
+        shelf_frame = f"shelf_{int(req.shelf_id)}"
+        delivery_frame = f"delivery_{int(req.delivery_id)}"
+        pkg_id = req.package_id if req.package_id else f"pkg_{req.order_id}"
+        
+        feedback = FulfillOrder.Feedback()
 
         if not self._tf_exists(shelf_frame) or not self._tf_exists(delivery_frame):
-            result.success = False
-            result.message = "TF frame missing"
-            goal_handle.succeed()
-            return result
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message="TF Missing")
 
-        # 1. Spawn on Shelf (Before moving)
+        # ---------------------------------------------------------
+        # 1. SPAWN ON SHELF (Before moving)
+        # ---------------------------------------------------------
+        feedback.stage = "spawning_package"
+        feedback.progress = 0.05
+        goal_handle.publish_feedback(feedback)
+
         try:
-            tf = self.tf_buffer.lookup_transform('map', shelf_frame, rclpy.time.Time())
-            # USE EXACT SHELF COORDS - do not add offset as per your request
-            shelf_x = tf.transform.translation.x
-            shelf_y = tf.transform.translation.y
-            shelf_z = 1.5 
+            tf_shelf = self.tf_buffer.lookup_transform('map', shelf_frame, rclpy.time.Time())
+            # EXACT LOGIC YOU REQUESTED: shelf_x + 0.5, Z=1.2
+            shelf_x = tf_shelf.transform.translation.x + 0.5
+            shelf_y = tf_shelf.transform.translation.y
+            shelf_z = 1.2
             
-            self._spawn_package(package_name, shelf_x, shelf_y, shelf_z)
+            self._spawn_package(pkg_id, shelf_x, shelf_y, shelf_z)
             time.sleep(1.0)
         except Exception as e:
             self._log(f"Spawn Error: {e}")
 
-        # 2. Go to Shelf
-        self._log(f"Step 1: Navigating to {shelf_frame}")
-        ok, msg = self._nav2_go_to_frame(goal_handle, shelf_frame, "goto_shelf", 0.0, 0.45)
+        # ---------------------------------------------------------
+        # 2. GO TO SHELF
+        # ---------------------------------------------------------
+        ok, msg = self._nav2_go_to_frame(goal_handle, shelf_frame, "goto_shelf", 0.1, 0.45)
         if not ok:
-            result.success = False
-            result.message = msg
-            goal_handle.succeed()
-            return result
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message=msg)
 
-        # 3. Pick - Attach
-        self._log(f"Step 2: Picking {package_name}...")
-        self._attach_package_to_robot(package_name)
+        # ---------------------------------------------------------
+        # 3. PICK (ATTACH)
+        # ---------------------------------------------------------
+        feedback.stage = "picking"
+        feedback.progress = 0.50
+        goal_handle.publish_feedback(feedback)
+        
+        self._log(f"Picking {pkg_id}...")
+        time.sleep(1.0)
+        self._attach_package_to_robot(pkg_id)
         time.sleep(1.0)
 
-        # 4. BACK UP (Critical Step to Unstuck)
-        self._backup_robot(duration=2.5) # Increased backup duration
+        # ---------------------------------------------------------
+        # 4. BACKUP (CLEAR SHELF)
+        # ---------------------------------------------------------
+        self._backup_robot(2.5)
 
-        # 5. Go to Delivery
-        self._log(f"Step 3: Navigating to {delivery_frame}")
+        # ---------------------------------------------------------
+        # 5. GO TO DELIVERY
+        # ---------------------------------------------------------
         ok, msg = self._nav2_go_to_frame(goal_handle, delivery_frame, "goto_delivery", 0.55, 0.90)
         if not ok:
-            result.success = False
-            result.message = msg
-            goal_handle.succeed()
-            return result
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message=msg)
 
-        # 6. Place
-        self._log(f"Step 4: Delivering {package_name}")
-        self.remove_package(package_name)
-
-        result.success = True
-        result.message = "Order Complete"
+        # ---------------------------------------------------------
+        # 6. PLACE (DELIVER)
+        # ---------------------------------------------------------
+        feedback.stage = "delivering"
+        feedback.progress = 0.95
+        goal_handle.publish_feedback(feedback)
+        
+        self._remove_package(pkg_id)
         goal_handle.succeed()
-        self._log("Mission Complete.")
-        return result
+        return FulfillOrder.Result(success=True, message="Success")
 
 
 def main():
@@ -322,13 +333,8 @@ def main():
     node = FulfillOrderServer()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
-    try:
-        executor.spin()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    executor.spin()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':

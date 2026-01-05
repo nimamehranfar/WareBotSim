@@ -14,16 +14,14 @@ class OrderManager(Node):
     def __init__(self):
         super().__init__('order_manager')
 
-        # IDs in the world
-        self.declare_parameter('shelf_ids', [1, 2])
-        self.declare_parameter('delivery_ids', [1, 2])
+        # Updated to include ID 3
+        self.declare_parameter('shelf_ids', [1, 2, 3])
+        self.declare_parameter('delivery_ids', [1, 2, 3])
 
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
 
         # Approach offsets (meters)
-        # shelves are at x=1.6; approach from west (x - 0.8) facing +x
-        # deliveries are at x=-2.6; approach from east (x + 0.8) facing -x
         self.declare_parameter('shelf_approach_dx', -0.8)
         self.declare_parameter('delivery_approach_dx', +0.8)
 
@@ -119,30 +117,34 @@ class OrderManager(Node):
 
             self.static_tf_broadcaster.sendTransform(t)
 
-        # Frames needed for Nav2/TF convenience
+        # Base frames
         send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
-        send('base_link', 'lidar_link', 0.20, 0.0, 0.25, 0.0)
-        send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.25, 0.0)
+        
+        # UPDATED: LIDAR is now high up at 0.75m
+        send('base_link', 'lidar_link', 0.20, 0.0, 0.75, 0.0)
+        send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.75, 0.0)
 
         shelf_dx = float(self.get_parameter('shelf_approach_dx').value)
         deliv_dx = float(self.get_parameter('delivery_approach_dx').value)
 
-        # Exact world object centers (from warehouse_world.sdf)
+        # UPDATED COORDINATES from warehouse_world.sdf
         shelves = {
-            1: (1.6, 0.0),
-            2: (1.6, -1.4),
+            1: (2.2, 1.5),
+            2: (1.8, -0.2),
+            3: (2.5, -2.0),
         }
         deliveries = {
-            1: (-2.6, 0.0),
-            2: (-2.6, -1.4),
+            1: (-2.2, 2.0),
+            2: (-1.8, 0.0),
+            3: (-2.5, -2.2),
         }
 
-        # Publish Nav2 target frames in MAP frame (2D z=0)
+        # Publish Nav2 target frames in MAP frame
         for sid, (x, y) in shelves.items():
-            send('map', f'shelf_{sid}', x + shelf_dx, y, 0.0, 0.0)  # face +x
+            send('map', f'shelf_{sid}', x + shelf_dx, y, 0.0, 0.0)  # Approach from left
 
         for did, (x, y) in deliveries.items():
-            send('map', f'delivery_{did}', x + deliv_dx, y, 0.0, math.pi)  # face -x
+            send('map', f'delivery_{did}', x + deliv_dx, y, 0.0, math.pi)  # Approach from right
 
 
 def main():

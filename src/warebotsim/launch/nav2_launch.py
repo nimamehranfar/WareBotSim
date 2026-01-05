@@ -6,7 +6,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 
@@ -22,24 +22,19 @@ def generate_launch_description():
         "nav2_params.yaml",
     )
 
-    # --- 1. Resolve Map Path ---
     map_file_path = os.path.join(
         pkg_share,
         "maps",
         "warehouse.yaml"
     )
 
-    # --- 2. Resolve Behavior Tree XML Paths ---
+    # Resolve Behavior Tree XML Paths (Using standard one now that behavior server will work)
     nav2_bt_pkg_share = get_package_share_directory("nav2_bt_navigator")
-    
-    # USE TREE WITHOUT RECOVERY (Avoids dependency on broken behavior_server)
     nav_to_pose_xml = os.path.join(
         nav2_bt_pkg_share,
         "behavior_trees",
-        "navigate_to_pose_w_replanning.xml"
+        "navigate_to_pose_w_replanning_and_recovery.xml"
     )
-    
-    # Fallback/Default for through-poses
     nav_through_poses_xml = os.path.join(
         nav2_bt_pkg_share,
         "behavior_trees",
@@ -56,6 +51,15 @@ def generate_launch_description():
         "params_file",
         default_value=default_params,
         description="Full path to the Nav2 YAML parameters file",
+    )
+
+    # --- FIX: Run behavior_server as a standalone node to avoid class-loader errors ---
+    behavior_server_node = Node(
+        package='nav2_behaviors',
+        executable='behavior_server',
+        name='behavior_server',
+        output='screen',
+        parameters=[params_file],
     )
 
     nav2_container = ComposableNodeContainer(
@@ -89,7 +93,7 @@ def generate_launch_description():
                 name="planner_server",
                 parameters=[params_file],
             ),
-            # REMOVED: behavior_server (Broken in this setup)
+            # behavior_server removed from here and moved to standalone Node above
             ComposableNode(
                 package="nav2_bt_navigator",
                 plugin="nav2_bt_navigator::BtNavigator",
@@ -127,6 +131,7 @@ def generate_launch_description():
         [
             declare_use_sim_time,
             declare_params_file,
+            behavior_server_node, # Added standalone node
             nav2_container,
         ]
     )

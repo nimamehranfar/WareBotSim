@@ -44,15 +44,36 @@ bt_navigator:
     enable_groot_monitoring: false
     groot_zmq_publisher_port: 1666
     groot_zmq_server_port: 1667
-    # CRITICAL FIX: Do NOT list plugin_lib_names - navigators auto-load all BT nodes
-    # Navigators configuration
+    # XMLs passed via launch file
     navigators: ['navigate_to_pose', 'navigate_through_poses']
     navigate_to_pose:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
-      default_bt_xml_filename: "/opt/ros/kilted/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
     navigate_through_poses:
-      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"  
-      default_bt_xml_filename: "/opt/ros/kilted/share/nav2_bt_navigator/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+
+# --- ADDED THIS SECTION (Required for Spin/Backup) ---
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/Backup"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    global_frame: "odom"
+    robot_base_frame: "base_link"
+    transform_tolerance: 0.1
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 3.2
 
 controller_server:
   ros__parameters:
@@ -62,7 +83,7 @@ controller_server:
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
-    progress_checker_plugins: ["progress_checker"]
+    progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
 
@@ -229,4 +250,4 @@ lifecycle_manager_navigation:
   ros__parameters:
     use_sim_time: true
     autostart: true
-    node_names: ["controller_server", "planner_server", "bt_navigator", "waypoint_follower"]
+    node_names: ["controller_server", "planner_server", "behavior_server", "bt_navigator", "waypoint_follower"]

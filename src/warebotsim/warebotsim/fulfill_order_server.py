@@ -125,30 +125,28 @@ class FulfillOrderServer(Node):
         try:
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             
-            # Calculate rotation to place box aligned with robot
-            q = tf.transform.rotation
-            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
-            cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
-            yaw = math.atan2(siny_cosp, cosy_cosp)
-            
-            # SAFE POSITION: 
-            # -0.1m behind center (Reduced from -0.2 to prevent falling off back)
-            # +0.30m UP (Reduced from +0.5 to reduce drop bounce)
-            offset_x = -0.1 * math.cos(yaw)
-            offset_y = -0.1 * math.sin(yaw)
-            
-            final_x = tf.transform.translation.x + offset_x
-            final_y = tf.transform.translation.y + offset_y
-            final_z = tf.transform.translation.z + 0.30 
+            # Robot Position
+            rx = tf.transform.translation.x
+            ry = tf.transform.translation.y
+            rz = tf.transform.translation.z
 
-            self._log(f"Teleporting {package_id} to robot SAFE ZONE ({final_x:.2f}, {final_y:.2f})...")
+            # Robot Orientation
+            q = tf.transform.rotation
             
+            # SAFE POSITION: Center of robot (No X/Y offset), Just Z offset
+            final_x = rx
+            final_y = ry
+            final_z = rz + 0.30 
+
+            self._log(f"Teleporting {package_id} to robot CENTER ({final_x:.2f}, {final_y:.2f})...")
+            
+            # Uses exact robot quaternion (q.x, q.y, q.z, q.w) to match angle perfectly
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: 0, y: 0, z: {q.z}, w: {q.w}}}'
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q.x}, y: {q.y}, z: {q.z}, w: {q.w}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)

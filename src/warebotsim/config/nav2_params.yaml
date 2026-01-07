@@ -39,7 +39,6 @@ bt_navigator:
     odom_topic: "odom"
     bt_loop_duration: 10
     default_server_timeout: 20
-    # launch file overrides XML paths
     enable_groot_monitoring: false
     groot_zmq_publisher_port: 1666
     groot_zmq_server_port: 1667
@@ -57,11 +56,10 @@ behavior_server:
     cycle_frequency: 10.0
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
     
-    # --- CRITICAL FIX: Use '::' instead of '/' to match declared types in error log ---
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors::BackUp" # Note the Capital U in BackUp based on log
+      plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
       plugin: "nav2_behaviors::DriveOnHeading"
     wait:
@@ -94,22 +92,23 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      # TIGHTENED TOLERANCE TO ENSURE ROBOT GETS CLOSER
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.20
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
       min_vel_x: -0.1
-      max_vel_x: 0.3
-      max_vel_theta: 1.0
+      max_vel_x: 0.5
+      max_vel_theta: 1.5
       min_speed_xy: 0.0
-      max_speed_xy: 0.26
+      max_speed_xy: 0.5
       min_speed_theta: 0.0
-      acc_lim_x: 1.0
+      acc_lim_x: 0.5
       acc_lim_theta: 2.0
-      decel_lim_x: -1.0
+      decel_lim_x: -0.5
       decel_lim_theta: -2.0
       vx_samples: 20
       vtheta_samples: 20
@@ -117,7 +116,8 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-      xy_goal_tolerance: 0.25
+      # TIGHTENED TOLERANCE TO MATCH GOAL CHECKER
+      xy_goal_tolerance: 0.15
       trans_stopped_velocity: 0.25
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
@@ -250,5 +250,4 @@ lifecycle_manager_navigation:
   ros__parameters:
     use_sim_time: true
     autostart: true
-    # Re-added behavior_server since we fixed the plugin config
     node_names: ["controller_server", "planner_server", "behavior_server", "bt_navigator", "waypoint_follower"]

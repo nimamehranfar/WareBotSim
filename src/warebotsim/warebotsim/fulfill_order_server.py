@@ -140,7 +140,7 @@ class FulfillOrderServer(Node):
 
             self._log(f"Teleporting {package_id} to robot CENTER ({final_x:.2f}, {final_y:.2f})...")
             
-            # Uses exact robot quaternion (q.x, q.y, q.z, q.w) to match angle perfectly
+            # Use EXACT robot quaternion (x,y,z,w) so package angle matches perfectly
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
@@ -297,12 +297,12 @@ class FulfillOrderServer(Node):
         # 2. GO TO SHELF
         # ---------------------------------------------------------
         try:
-            # APPROACH POSE: 0.7m in front of shelf center (x - 0.7)
-            # Reduced from 1.2m to get closer
+            # APPROACH POSE: 0.5m in front of shelf center (x - 0.5)
+            # Reduced from 0.7m to get CLOSER
             approach_pose = PoseStamped()
             approach_pose.header.frame_id = 'map'
             approach_pose.header.stamp = self.get_clock().now().to_msg()
-            approach_pose.pose.position.x = shelf_center_x - 0.7 
+            approach_pose.pose.position.x = shelf_center_x - 0.2
             approach_pose.pose.position.y = shelf_center_y
             approach_pose.pose.position.z = 0.0
             
@@ -343,9 +343,33 @@ class FulfillOrderServer(Node):
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY
         # ---------------------------------------------------------
+        delivery_x = 0.0
+        delivery_y = 0.0
+        delivery_z = 0.0
+        
         try:
-            delivery_pose = self._pose_from_tf(delivery_frame)
-            ok, msg = self._nav2_go_to_pose(goal_handle, delivery_pose, "goto_delivery", 0.55, 0.90)
+            tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
+            delivery_x = tf_delivery.transform.translation.x
+            delivery_y = tf_delivery.transform.translation.y
+            delivery_z = tf_delivery.transform.translation.z
+            
+            # APPROACH POSE: 0.6m in front of delivery point
+            # This prevents robot from standing exactly ON the delivery point causing collision with box
+            delivery_approach = PoseStamped()
+            delivery_approach.header.frame_id = 'map'
+            delivery_approach.header.stamp = self.get_clock().now().to_msg()
+            delivery_approach.pose.position.x = delivery_x - 0.2
+            delivery_approach.pose.position.y = delivery_y
+            delivery_approach.pose.position.z = 0.0
+            
+            # Orientation: Face +X
+            q = quaternion_from_euler(0, 0, 0) 
+            delivery_approach.pose.orientation.x = q[0]
+            delivery_approach.pose.orientation.y = q[1]
+            delivery_approach.pose.orientation.z = q[2]
+            delivery_approach.pose.orientation.w = q[3]
+
+            ok, msg = self._nav2_go_to_pose(goal_handle, delivery_approach, "goto_delivery", 0.55, 0.90)
             if not ok:
                 goal_handle.abort()
                 return FulfillOrder.Result(success=False, message=msg)
@@ -360,17 +384,8 @@ class FulfillOrderServer(Node):
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
         
-        # Get delivery coordinates from TF
-        try:
-            tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
-            delivery_x = tf_delivery.transform.translation.x
-            delivery_y = tf_delivery.transform.translation.y
-            delivery_z = tf_delivery.transform.translation.z
-        except Exception as e:
-            self._log(f"Delivery TF Lookup Failed: {e}")
-            goal_handle.abort()
-            return FulfillOrder.Result(success=False, message="Delivery TF Missing")
-
+        # Place package AT the actual delivery point coordinates.
+        # Since robot is at delivery_x - 0.6, placing at delivery_x puts it in front of robot.
         self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")

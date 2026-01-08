@@ -82,6 +82,15 @@ class FulfillOrderServer(Node):
         pose.pose.orientation = tf.transform.rotation
         return pose
 
+    def _get_robot_pose(self):
+        """Get robot's current pose in map frame."""
+        try:
+            tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
+            return tf.transform.translation.x, tf.transform.translation.y, tf.transform.rotation
+        except Exception as e:
+            self._log(f"Failed to get robot pose: {e}")
+            return None, None, None
+
     # --- ACTION HELPERS ---
 
     def _spawn_package(self, package_id: str, x: float, y: float, z: float) -> bool:
@@ -121,7 +130,7 @@ class FulfillOrderServer(Node):
             return False
 
     def _attach_package_to_robot(self, package_id: str) -> bool:
-        """Teleport package from shelf to robot safe zone."""
+        """Teleport package from shelf to robot safe zone - CENTERED and ALIGNED."""
         try:
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             
@@ -134,28 +143,29 @@ class FulfillOrderServer(Node):
             q_robot = tf.transform.rotation
             (roll, pitch, yaw) = euler_from_quaternion([q_robot.x, q_robot.y, q_robot.z, q_robot.w])
             
-            # Create a clean quaternion (Pitch=0, Roll=0) to ensure box is FLAT
-            q_clean = quaternion_from_euler(0, 0, yaw)
+            self._log(f"Robot at ({rx:.2f}, {ry:.2f}), yaw={math.degrees(yaw):.1f}°")
 
-            # SAFE POSITION CALCULATION:
-            # Move -0.12m backwards along the robot's heading.
-            # Lidar is at +0.20. Package is 0.15 box (0.075 half-length).
-            # Placed at -0.12, front edge is at -0.045. Clearance to Lidar > 20cm.
-            offset_x = -0.12 * math.cos(yaw)
-            offset_y = -0.12 * math.sin(yaw)
+            # CENTERED POSITION CALCULATION:
+            # Lidar is at x=+0.20 from base_link
+            # Package is 0.15x0.15x0.15
+            # Place package at x=0.0 (centered on robot, behind lidar)
+            # This gives 0.20m clearance to lidar (lidar at +0.20, package front at +0.075)
+            offset_x = 0.0 * math.cos(yaw) - 0.0 * math.sin(yaw)
+            offset_y = 0.0 * math.sin(yaw) + 0.0 * math.cos(yaw)
 
             final_x = rx + offset_x
             final_y = ry + offset_y
-            final_z = rz + 0.30 
+            final_z = rz + 0.30  # Slightly above robot
 
-            self._log(f"Teleporting {package_id} to robot ({final_x:.2f}, {final_y:.2f})...")
+            self._log(f"Teleporting {package_id} to ({final_x:.2f}, {final_y:.2f}, {final_z:.2f}), yaw={math.degrees(yaw):.1f}°")
             
+            # Use INLINE pose format with yaw directly
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q_clean[0]}, y: {q_clean[1]}, z: {q_clean[2]}, w: {q_clean[3]}}}'
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}}, orientation: {{x: 0, y: 0, z: {math.sin(yaw/2.0)}, w: {math.cos(yaw/2.0)}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -169,24 +179,32 @@ class FulfillOrderServer(Node):
             self.get_logger().error(f"Attach exception: {e}")
             return False
 
-    def _place_package_at_delivery(self, package_id: str, x: float, y: float, z: float) -> bool:
-        """Teleport package from robot to on top of the delivery point."""
+    def _place_package_at_delivery(self, package_id: str, delivery_center_x: float, delivery_center_y: float) -> bool:
+        """Place package inside delivery cylinder (on the floor inside it)."""
         try:
-            # DELIVERY HEIGHT FIX:
-            # Delivery model in SDF is a cylinder length 1.4m at pose z=0.7.
-            # This means it occupies z=0.0 to z=1.4.
-            # We must place package ON TOP, so Z must be > 1.4.
-            # Using 1.5m ensures it sits on the pillar.
-            final_z = 1.5
+            # Delivery cylinders in SDF:
+            # - radius: 0.18m
+            # - height (length): 1.4m
+            # - pose z: 0.7m (center of cylinder)
+            # This means cylinder spans from z=0.0 to z=1.4
             
-            self._log(f"Placing {package_id} on delivery pillar ({x:.2f}, {y:.2f}, {final_z:.2f})...")
+            # Place package INSIDE the cylinder, resting on the floor (z=0.0)
+            # Package is 0.15x0.15x0.15, so half-height is 0.075
+            # To have package sitting on floor with bottom at z=0, center should be at z=0.075
+            # Add small offset to ensure it's slightly above floor: z=0.10
+            
+            final_x = delivery_center_x
+            final_y = delivery_center_y
+            final_z = 0.10  # Package center at 10cm, so bottom at ~2.5cm (inside cylinder)
+            
+            self._log(f"Placing {package_id} inside delivery cylinder ({final_x:.2f}, {final_y:.2f}, {final_z:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {x}, y: {y}, z: {final_z}}} orientation: {{x: 0, y: 0, z: 0, w: 1}}'
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}}, orientation: {{x: 0, y: 0, z: 0, w: 1}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -200,12 +218,12 @@ class FulfillOrderServer(Node):
             self.get_logger().error(f"Delivery Exception: {e}")
             return False
 
-    def _backup_robot(self, duration=2.5):
-        """Manually drive backward to clear shelf costmap inflation."""
-        self._log("Backing up to clear shelf...")
+    def _manual_drive(self, linear_x, angular_z, duration):
+        """Manually drive robot with given velocities for duration."""
         msg = TwistStamped()
         msg.header.frame_id = 'base_link'
-        msg.twist.linear.x = -0.3 
+        msg.twist.linear.x = linear_x
+        msg.twist.angular.z = angular_z
         
         end_time = time.time() + duration
         while time.time() < end_time:
@@ -215,8 +233,38 @@ class FulfillOrderServer(Node):
         
         # Stop
         msg.twist.linear.x = 0.0
+        msg.twist.angular.z = 0.0
         self.vel_pub.publish(msg)
-        self._log("Backup complete.")
+
+    def _backup_and_turn(self, target_yaw):
+        """Back up from shelf and rotate to face target direction."""
+        self._log("Backing up from shelf...")
+        self._manual_drive(-0.3, 0.0, 3.0)  # Back up 0.9m
+        time.sleep(0.5)
+        
+        # Get current yaw
+        rx, ry, q = self._get_robot_pose()
+        if q is None:
+            self._log("Can't get robot pose, skipping rotation")
+            return
+        
+        current_yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])[2]
+        
+        # Calculate angle difference
+        angle_diff = target_yaw - current_yaw
+        # Normalize to [-pi, pi]
+        while angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+        while angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+        
+        self._log(f"Rotating {math.degrees(angle_diff):.1f}° to face target...")
+        
+        # Rotate to face target
+        rotation_time = abs(angle_diff) / 0.5  # 0.5 rad/s rotation speed
+        rotation_dir = 1.0 if angle_diff > 0 else -1.0
+        self._manual_drive(0.0, 0.5 * rotation_dir, rotation_time)
+        time.sleep(0.5)
 
     def _nav2_go_to_pose(self, goal_handle, pose: PoseStamped, stage_prefix: str,
                           p_min: float, p_max: float) -> tuple[bool, str]:
@@ -284,6 +332,26 @@ class FulfillOrderServer(Node):
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message="TF Missing")
 
+        # Get shelf and delivery real positions from warehouse_world.sdf
+        # Shelves: (2.2, 1.5), (1.8, -0.2), (2.5, -2.0)
+        # Deliveries: (-2.2, 2.0), (-1.8, 0.0), (-2.5, -2.2)
+        shelf_positions = {
+            1: (2.2, 1.5),
+            2: (1.8, -0.2),
+            3: (2.5, -2.0),
+        }
+        delivery_positions = {
+            1: (-2.2, 2.0),
+            2: (-1.8, 0.0),
+            3: (-2.5, -2.2),
+        }
+        
+        shelf_id = int(req.shelf_id)
+        delivery_id = int(req.delivery_id)
+        
+        shelf_center_x, shelf_center_y = shelf_positions[shelf_id]
+        delivery_center_x, delivery_center_y = delivery_positions[delivery_id]
+
         # ---------------------------------------------------------
         # 1. SPAWN ON SHELF
         # ---------------------------------------------------------
@@ -292,12 +360,8 @@ class FulfillOrderServer(Node):
         goal_handle.publish_feedback(feedback)
 
         try:
-            tf_shelf = self.tf_buffer.lookup_transform('map', shelf_frame, rclpy.time.Time())
-            # Shelf spawning offset (inside shelf)
-            shelf_center_x = tf_shelf.transform.translation.x
-            shelf_center_y = tf_shelf.transform.translation.y
-            
-            spawn_x = shelf_center_x + 0.5
+            # Spawn inside shelf
+            spawn_x = shelf_center_x + 0.35  # Inside shelf
             spawn_y = shelf_center_y
             spawn_z = 1.2
             
@@ -310,17 +374,16 @@ class FulfillOrderServer(Node):
         # 2. GO TO SHELF
         # ---------------------------------------------------------
         try:
-            # APPROACH POSE: 0.5m in front of shelf center (x - 0.5)
-            # Reduced from 0.7m to get CLOSER
+            # Approach at 1.2m before shelf center (was 1.0m, increasing for safety)
             approach_pose = PoseStamped()
             approach_pose.header.frame_id = 'map'
             approach_pose.header.stamp = self.get_clock().now().to_msg()
-            approach_pose.pose.position.x = shelf_center_x - 0.5
+            approach_pose.pose.position.x = shelf_center_x - 1.2
             approach_pose.pose.position.y = shelf_center_y
             approach_pose.pose.position.z = 0.0
             
-            # Orientation: Face the shelf (Face +X)
-            q = quaternion_from_euler(0, 0, 0) 
+            # Orientation: Face EAST (towards shelf, 0 degrees)
+            q = quaternion_from_euler(0, 0, 0.0)
             approach_pose.pose.orientation.x = q[0]
             approach_pose.pose.orientation.y = q[1]
             approach_pose.pose.orientation.z = q[2]
@@ -348,35 +411,27 @@ class FulfillOrderServer(Node):
         time.sleep(1.0)
 
         # ---------------------------------------------------------
-        # 4. BACKUP (CLEAR SHELF)
+        # 4. BACKUP AND ROTATE TO FACE DELIVERY
         # ---------------------------------------------------------
-        # Facing +X, so negative linear.x moves us away (-X)
-        self._backup_robot(1.5)
+        # Calculate bearing to delivery
+        target_yaw = math.atan2(delivery_center_y - shelf_center_y, 
+                                delivery_center_x - shelf_center_x)
+        self._backup_and_turn(target_yaw)
 
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY
         # ---------------------------------------------------------
-        delivery_x = 0.0
-        delivery_y = 0.0
-        delivery_z = 0.0
-        
         try:
-            tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
-            delivery_x = tf_delivery.transform.translation.x
-            delivery_y = tf_delivery.transform.translation.y
-            delivery_z = tf_delivery.transform.translation.z
-            
-            # APPROACH POSE: 0.8m in front of delivery point
-            # Increased spacing (from 0.6 to 0.8) so robot doesn't stand inside the delivery zone
+            # Approach at 1.0m after delivery center
             delivery_approach = PoseStamped()
             delivery_approach.header.frame_id = 'map'
             delivery_approach.header.stamp = self.get_clock().now().to_msg()
-            delivery_approach.pose.position.x = delivery_x - 0.8
-            delivery_approach.pose.position.y = delivery_y
+            delivery_approach.pose.position.x = delivery_center_x + 1.0
+            delivery_approach.pose.position.y = delivery_center_y
             delivery_approach.pose.position.z = 0.0
             
-            # Orientation: Face +X (Towards Delivery)
-            q = quaternion_from_euler(0, 0, 0) 
+            # Orientation: Face WEST (towards delivery, 180 degrees = pi)
+            q = quaternion_from_euler(0, 0, math.pi)
             delivery_approach.pose.orientation.x = q[0]
             delivery_approach.pose.orientation.y = q[1]
             delivery_approach.pose.orientation.z = q[2]
@@ -397,9 +452,8 @@ class FulfillOrderServer(Node):
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
         
-        # Place package AT the actual delivery point coordinates.
-        # Fixed Height: 1.5m to land ON TOP of the 1.4m pillar.
-        self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
+        # Place package inside delivery cylinder (at center, on floor)
+        self._place_package_at_delivery(pkg_id, delivery_center_x, delivery_center_y)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
 

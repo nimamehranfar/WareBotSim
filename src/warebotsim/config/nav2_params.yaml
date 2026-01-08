@@ -92,15 +92,15 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      # Forgiving tolerances - reduce auto-adjustment
+      # Tolerances: Loose enough to stop hunting, tight enough to be accurate
       xy_goal_tolerance: 0.30
-      yaw_goal_tolerance: 0.40
+      yaw_goal_tolerance: 0.25
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
-      # CRITICAL: Disable backing up by setting min_vel_x to 0.0
+      # MIN_VEL_X = 0.0 DISALLOWS BACKWARDS DRIVING
       min_vel_x: 0.0
       max_vel_x: 0.55
       max_vel_theta: 1.0
@@ -117,20 +117,19 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-      # Match forgiving goal tolerances
       xy_goal_tolerance: 0.30
       trans_stopped_velocity: 0.25
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      # Lower alignment scales - less aggressive corrections
-      PathAlign.scale: 8.0
+      # CRITICS TUNED TO PREVENT MICRO-ADJUSTING
+      PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 8.0
+      GoalAlign.scale: 24.0
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      RotateToGoal.scale: 0.0
+      RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
       RotateToGoal.lookahead_time: -1.0
 

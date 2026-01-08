@@ -39,7 +39,6 @@ bt_navigator:
     odom_topic: "odom"
     bt_loop_duration: 10
     default_server_timeout: 20
-    # launch file overrides XML paths
     enable_groot_monitoring: false
     groot_zmq_publisher_port: 1666
     groot_zmq_server_port: 1667
@@ -60,7 +59,7 @@ behavior_server:
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors::BackUp" # Note the Capital U in BackUp based on log
+      plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
       plugin: "nav2_behaviors::DriveOnHeading"
     wait:
@@ -93,15 +92,16 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      # SIGNIFICANTLY INCREASED TOLERANCES to stop "adjusting too much"
-      xy_goal_tolerance: 0.40
-      yaw_goal_tolerance: 0.40
+      # Relaxed tolerances to prevent "dancing" at goal
+      xy_goal_tolerance: 0.35
+      yaw_goal_tolerance: 0.35
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
-      min_vel_x: 0.0
+      # CRITICAL: Allow negative velocity (reverse) to adjust at goal without spinning
+      min_vel_x: -0.2
       max_vel_x: 0.55
       max_vel_theta: 1.0
       min_speed_xy: 0.0
@@ -117,13 +117,12 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-      # MATCHING GOAL CHECKER
-      xy_goal_tolerance: 0.40
+      xy_goal_tolerance: 0.35
       trans_stopped_velocity: 0.25
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      # REDUCED CRITIC SCALES to prevent fighting/vibrating at goal
+      # Low scales prevent obsessive alignment behaviors
       PathAlign.scale: 5.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 5.0
@@ -252,5 +251,4 @@ lifecycle_manager_navigation:
   ros__parameters:
     use_sim_time: true
     autostart: true
-    # Re-added behavior_server since we fixed the plugin config
     node_names: ["controller_server", "planner_server", "behavior_server", "bt_navigator", "waypoint_follower"]

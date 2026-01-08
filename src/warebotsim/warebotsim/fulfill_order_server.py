@@ -15,7 +15,7 @@ from nav2_msgs.action import NavigateToPose
 
 from tf2_ros import Buffer, TransformListener
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
-from tf_transformations import quaternion_from_euler
+from tf_transformations import quaternion_from_euler, euler_from_quaternion
 
 from warebotsim_interfaces.action import FulfillOrder
 
@@ -130,23 +130,26 @@ class FulfillOrderServer(Node):
             ry = tf.transform.translation.y
             rz = tf.transform.translation.z
 
-            # Extract Yaw only to keep box flat (x=0, y=0)
-            q = tf.transform.rotation
-            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
-            cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
-            yaw = math.atan2(siny_cosp, cosy_cosp)
+            # Get Yaw from Robot Quaternion
+            q_robot = tf.transform.rotation
+            (roll, pitch, yaw) = euler_from_quaternion([q_robot.x, q_robot.y, q_robot.z, q_robot.w])
             
-            # Create a clean quaternion from Yaw (Roll=0, Pitch=0)
+            # Create a clean quaternion (Pitch=0, Roll=0) to ensure box is FLAT
             q_clean = quaternion_from_euler(0, 0, yaw)
 
-            # SAFE POSITION: Center of robot (No X/Y offset), Just Z offset
-            final_x = rx
-            final_y = ry
+            # SAFE POSITION CALCULATION:
+            # Move -0.12m backwards along the robot's heading.
+            # Lidar is at +0.20. Package is 0.15 box (0.075 half-length).
+            # Placed at -0.12, front edge is at -0.045. Clearance to Lidar > 20cm.
+            offset_x = -0.12 * math.cos(yaw)
+            offset_y = -0.12 * math.sin(yaw)
+
+            final_x = rx + offset_x
+            final_y = ry + offset_y
             final_z = rz + 0.30 
 
-            self._log(f"Teleporting {package_id} to robot CENTER ({final_x:.2f}, {final_y:.2f})...")
+            self._log(f"Teleporting {package_id} to robot ({final_x:.2f}, {final_y:.2f})...")
             
-            # Use CLEAN quaternion to ensure box matches robot heading but stays perfectly flat
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
@@ -167,12 +170,16 @@ class FulfillOrderServer(Node):
             return False
 
     def _place_package_at_delivery(self, package_id: str, x: float, y: float, z: float) -> bool:
-        """Teleport package from robot to inside the delivery point."""
+        """Teleport package from robot to on top of the delivery point."""
         try:
-            # Place it slightly above the frame origin (z + 0.2)
-            final_z = z + 0.2
+            # DELIVERY HEIGHT FIX:
+            # Delivery model in SDF is a cylinder length 1.4m at pose z=0.7.
+            # This means it occupies z=0.0 to z=1.4.
+            # We must place package ON TOP, so Z must be > 1.4.
+            # Using 1.5m ensures it sits on the pillar.
+            final_z = 1.5
             
-            self._log(f"Placing {package_id} at delivery ({x:.2f}, {y:.2f})...")
+            self._log(f"Placing {package_id} on delivery pillar ({x:.2f}, {y:.2f}, {final_z:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
@@ -390,11 +397,9 @@ class FulfillOrderServer(Node):
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
         
-        # LOGIC CHANGE: Place package 0.5m INSIDE the delivery zone (delivery_x + 0.5)
-        # Just like shelf_x + 0.5.
-        final_delivery_x = delivery_x + 0.5
-        
-        self._place_package_at_delivery(pkg_id, final_delivery_x, delivery_y, delivery_z)
+        # Place package AT the actual delivery point coordinates.
+        # Fixed Height: 1.5m to land ON TOP of the 1.4m pillar.
+        self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
 

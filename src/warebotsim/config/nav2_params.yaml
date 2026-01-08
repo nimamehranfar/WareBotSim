@@ -57,7 +57,6 @@ behavior_server:
     cycle_frequency: 10.0
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
     
-    # --- CRITICAL FIX: Use '::' instead of '/' to match declared types in error log ---
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:
@@ -94,22 +93,18 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      # Tightened slightly to ensure precision without oscillation (0.25 was too loose)
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      # SIGNIFICANTLY INCREASED TOLERANCES to stop "adjusting too much"
+      xy_goal_tolerance: 0.40
+      yaw_goal_tolerance: 0.40
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
-      # MIN_VEL_X = 0.0 forces forward motion only (no backwards)
       min_vel_x: 0.0
-      # INCREASED SPEED (Was 0.3)
       max_vel_x: 0.55
       max_vel_theta: 1.0
-      # MIN_SPEED_XY = 0.0 prevents overshooting/vibration
       min_speed_xy: 0.0
-      # INCREASED SPEED (Was 0.26)
       max_speed_xy: 0.55
       min_speed_theta: 0.0
       acc_lim_x: 1.0
@@ -122,19 +117,20 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-      xy_goal_tolerance: 0.25
+      # MATCHING GOAL CHECKER
+      xy_goal_tolerance: 0.40
       trans_stopped_velocity: 0.25
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      # REDUCED SCALES to stop fighting/orbiting at goal
-      PathAlign.scale: 16.0
+      # REDUCED CRITIC SCALES to prevent fighting/vibrating at goal
+      PathAlign.scale: 5.0
       PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 16.0
+      GoalAlign.scale: 5.0
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      RotateToGoal.scale: 32.0
+      RotateToGoal.scale: 5.0
       RotateToGoal.slowing_factor: 5.0
       RotateToGoal.lookahead_time: -1.0
 

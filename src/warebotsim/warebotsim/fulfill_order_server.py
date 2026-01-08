@@ -130,9 +130,15 @@ class FulfillOrderServer(Node):
             ry = tf.transform.translation.y
             rz = tf.transform.translation.z
 
-            # Robot Orientation
+            # Extract Yaw only to keep box flat (x=0, y=0)
             q = tf.transform.rotation
+            siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+            cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
             
+            # Create a clean quaternion from Yaw (Roll=0, Pitch=0)
+            q_clean = quaternion_from_euler(0, 0, yaw)
+
             # SAFE POSITION: Center of robot (No X/Y offset), Just Z offset
             final_x = rx
             final_y = ry
@@ -140,13 +146,13 @@ class FulfillOrderServer(Node):
 
             self._log(f"Teleporting {package_id} to robot CENTER ({final_x:.2f}, {final_y:.2f})...")
             
-            # Use EXACT robot quaternion (x,y,z,w) so package angle matches perfectly
+            # Use CLEAN quaternion to ensure box matches robot heading but stays perfectly flat
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q.x}, y: {q.y}, z: {q.z}, w: {q.w}}}'
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q_clean[0]}, y: {q_clean[1]}, z: {q_clean[2]}, w: {q_clean[3]}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -163,7 +169,7 @@ class FulfillOrderServer(Node):
     def _place_package_at_delivery(self, package_id: str, x: float, y: float, z: float) -> bool:
         """Teleport package from robot to inside the delivery point."""
         try:
-            # Place it slightly above the frame origin (z + 0.2) to ensure it doesn't clip into ground
+            # Place it slightly above the frame origin (z + 0.2)
             final_z = z + 0.2
             
             self._log(f"Placing {package_id} at delivery ({x:.2f}, {y:.2f})...")
@@ -302,7 +308,7 @@ class FulfillOrderServer(Node):
             approach_pose = PoseStamped()
             approach_pose.header.frame_id = 'map'
             approach_pose.header.stamp = self.get_clock().now().to_msg()
-            approach_pose.pose.position.x = shelf_center_x - 0.2
+            approach_pose.pose.position.x = shelf_center_x - 0.5
             approach_pose.pose.position.y = shelf_center_y
             approach_pose.pose.position.z = 0.0
             
@@ -353,16 +359,16 @@ class FulfillOrderServer(Node):
             delivery_y = tf_delivery.transform.translation.y
             delivery_z = tf_delivery.transform.translation.z
             
-            # APPROACH POSE: 0.6m in front of delivery point
-            # This prevents robot from standing exactly ON the delivery point causing collision with box
+            # APPROACH POSE: 0.8m in front of delivery point
+            # Increased spacing (from 0.6 to 0.8) so robot doesn't stand inside the delivery zone
             delivery_approach = PoseStamped()
             delivery_approach.header.frame_id = 'map'
             delivery_approach.header.stamp = self.get_clock().now().to_msg()
-            delivery_approach.pose.position.x = delivery_x - 0.2
+            delivery_approach.pose.position.x = delivery_x - 0.8
             delivery_approach.pose.position.y = delivery_y
             delivery_approach.pose.position.z = 0.0
             
-            # Orientation: Face +X
+            # Orientation: Face +X (Towards Delivery)
             q = quaternion_from_euler(0, 0, 0) 
             delivery_approach.pose.orientation.x = q[0]
             delivery_approach.pose.orientation.y = q[1]
@@ -384,9 +390,11 @@ class FulfillOrderServer(Node):
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
         
-        # Place package AT the actual delivery point coordinates.
-        # Since robot is at delivery_x - 0.6, placing at delivery_x puts it in front of robot.
-        self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
+        # LOGIC CHANGE: Place package 0.5m INSIDE the delivery zone (delivery_x + 0.5)
+        # Just like shelf_x + 0.5.
+        final_delivery_x = delivery_x + 0.5
+        
+        self._place_package_at_delivery(pkg_id, final_delivery_x, delivery_y, delivery_z)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
 

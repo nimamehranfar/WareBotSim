@@ -108,14 +108,14 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
 
-      # NO BACKWARDS
-      min_vel_x: 0.0
+      # BACKWARDS
+      min_vel_x: -0.1
       max_vel_x: 0.55
       max_vel_theta: 1.0
 
-      min_speed_xy: 0.0
+      min_speed_xy: -0.1
       max_speed_xy: 0.55
-      min_speed_theta: 0.0
+      min_speed_theta: -0.1
 
       acc_lim_x: 1.0
       acc_lim_theta: 2.0

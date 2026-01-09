@@ -14,20 +14,22 @@ class OrderManager(Node):
     def __init__(self):
         super().__init__('order_manager')
 
+        # Updated to include ID 3
         self.declare_parameter('shelf_ids', [1, 2, 3])
         self.declare_parameter('delivery_ids', [1, 2, 3])
 
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
 
-        # These define WHERE the TF target frames are published relative to the *model centers*
-        self.declare_parameter('shelf_approach_dx', -0.8)       # approach point left of shelf center
-        self.declare_parameter('delivery_approach_dx', +0.8)    # approach point right of delivery center
+        # Approach offsets (meters)
+        self.declare_parameter('shelf_approach_dx', -0.8)
+        self.declare_parameter('delivery_approach_dx', +0.8)
 
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
         self._publish_static_frames()
 
         self._next_order_id = 1
+        self._last_feedback_time = 0.0
 
         self._srv = self.create_service(
             CreateOrder,
@@ -37,15 +39,8 @@ class OrderManager(Node):
 
         self._ac = ActionClient(self, FulfillOrder, '/robot/fulfill_order')
 
-        # Throttle feedback prints (Nav2 feedback can be spammy)
-        self.declare_parameter('feedback_log_period_sec', 0.5)
-        self._fb_period = float(self.get_parameter('feedback_log_period_sec').value)
-        self._last_fb = 0.0
-
         self.get_logger().info(
-            f"Ready. Shelves={sorted(self.shelf_ids)} Deliveries={sorted(self.delivery_ids)} "
-            f"shelf_approach_dx={self.get_parameter('shelf_approach_dx').value} "
-            f"delivery_approach_dx={self.get_parameter('delivery_approach_dx').value}"
+            f"Ready. Shelves={sorted(self.shelf_ids)} Deliveries={sorted(self.delivery_ids)}"
         )
 
     def _handle_create_order(self, request, response):
@@ -94,15 +89,17 @@ class OrderManager(Node):
         if not goal_handle.accepted:
             self.get_logger().warn("Robot rejected the goal.")
             return
-        goal_handle.get_result_async().add_done_callback(self._on_result)
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self._on_result)
 
     def _on_feedback(self, feedback_msg):
-        now = self.get_clock().now().nanoseconds / 1e9
-        if (now - self._last_fb) < self._fb_period:
-            return
-        self._last_fb = now
         fb = feedback_msg.feedback
-        self.get_logger().info(f"[Robot] stage={fb.stage} progress={fb.progress:.2f}")
+        current_time = self.get_clock().now().nanoseconds / 1e9
+        
+        # Log every 2 seconds to reduce spam
+        if current_time - self._last_feedback_time >= 2.0:
+            self.get_logger().info(f"[Robot] {fb.stage} | progress={fb.progress:.2f}")
+            self._last_feedback_time = current_time
 
     def _on_result(self, future):
         result = future.result().result
@@ -128,15 +125,15 @@ class OrderManager(Node):
 
         # Base frames
         send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
-
-        # Lidar frames
+        
+        # UPDATED: LIDAR is now high up at 0.75m
         send('base_link', 'lidar_link', 0.20, 0.0, 0.75, 0.0)
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.75, 0.0)
 
         shelf_dx = float(self.get_parameter('shelf_approach_dx').value)
         deliv_dx = float(self.get_parameter('delivery_approach_dx').value)
 
-        # MODEL CENTER poses from src/warebotsim/worlds/warehouse_world.sdf
+        # UPDATED COORDINATES from warehouse_world.sdf
         shelves = {
             1: (2.2, 1.5),
             2: (1.8, -0.2),
@@ -148,12 +145,12 @@ class OrderManager(Node):
             3: (-2.5, -2.2),
         }
 
-        # Publish approach frames
-        for sid, (cx, cy) in shelves.items():
-            send('map', f'shelf_{sid}', cx + shelf_dx, cy, 0.0, 0.0)
+        # Publish Nav2 target frames in MAP frame
+        for sid, (x, y) in shelves.items():
+            send('map', f'shelf_{sid}', x + shelf_dx, y, 0.0, 0.0)  # Approach from left
 
-        for did, (cx, cy) in deliveries.items():
-            send('map', f'delivery_{did}', cx + deliv_dx, cy, 0.0, math.pi)
+        for did, (x, y) in deliveries.items():
+            send('map', f'delivery_{did}', x + deliv_dx, y, 0.0, math.pi)  # Approach from right
 
 
 def main():

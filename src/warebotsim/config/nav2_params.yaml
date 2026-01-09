@@ -109,11 +109,11 @@ controller_server:
       debug_trajectory_details: false
 
       # BACKWARDS
-      min_vel_x: -0.1
+      min_vel_x: -0.05
       max_vel_x: 0.55
       max_vel_theta: 1.0
 
-      min_speed_xy: -0.1
+      min_speed_xy: 0.15
       max_speed_xy: 0.55
       min_speed_theta: -0.1
 
@@ -152,7 +152,7 @@ controller_server:
 
       # Make RotateToGoal dominant near goal so it actually finishes the heading
       # RotateToGoal is designed specifically for final heading alignment near goal. :contentReference[oaicite:1]{index=1}
-      RotateToGoal.scale: 48.0
+      RotateToGoal.scale: 148.0
       RotateToGoal.slowing_factor: 3.0
       RotateToGoal.lookahead_time: -1.0
 

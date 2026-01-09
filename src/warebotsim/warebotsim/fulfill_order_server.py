@@ -246,14 +246,14 @@ class FulfillOrderServer(Node):
             time.sleep(0.1)
         self._stop_robot()
 
-    def _place_package_at_delivery_center(self, package_id: str, delivery_center_x: float, delivery_center_y: float) -> bool:
+    def _place_package_at_delivery_center(self, package_id: str, delivery_center_x: float, delivery_center_y: float, delivery_center_z: float) -> bool:
         try:
             _, _, yaw = self._get_robot_xy_yaw()
             z = float(self.get_parameter('delivery_place_z').value)
             self._log(
                 f"Place {package_id} -> delivery center ({delivery_center_x:.2f}, {delivery_center_y:.2f}, {z:.3f}) yaw={yaw:.3f}"
             )
-            return self._set_model_pose(package_id, delivery_center_x, delivery_center_y, z, yaw)
+            return self._set_model_pose(package_id, delivery_center_x, delivery_center_y, delivery_center_z, yaw)
         except Exception as e:
             self.get_logger().error(f"Delivery place exception: {e}")
             return False
@@ -471,8 +471,9 @@ class FulfillOrderServer(Node):
             # TF is center + deliv_dx, so center = TF - deliv_dx
             delivery_center_x = float(deliv_fx - deliv_dx)
             delivery_center_y = float(deliv_fy)
+            delivery_center_z = 1.2
 
-            self._place_package_at_delivery_center(pkg_id, delivery_center_x, delivery_center_y)
+            self._place_package_at_delivery_center(pkg_id, delivery_center_x, delivery_center_y, delivery_center_z)
         except Exception as e:
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message=f"Place Error: {e}")

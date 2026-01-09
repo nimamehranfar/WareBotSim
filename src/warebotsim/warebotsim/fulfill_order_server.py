@@ -137,10 +137,15 @@ class FulfillOrderServer(Node):
             # Create a clean quaternion (Pitch=0, Roll=0) to ensure box is FLAT
             q_clean = quaternion_from_euler(0, 0, yaw)
 
-            # POSITION: Center of robot (rx, ry)
-            # No offset needed if we just want it on top.
-            final_x = rx 
-            final_y = ry
+            # SAFE POSITION CALCULATION:
+            # Move -0.12m backwards along the robot's heading.
+            # Lidar is at +0.20. Package is 0.15 box (0.075 half-length).
+            # Placed at -0.12, front edge is at -0.045. Clearance to Lidar > 20cm.
+            offset_x = -0.12 * math.cos(yaw)
+            offset_y = -0.12 * math.sin(yaw)
+
+            final_x = rx + offset_x
+            final_y = ry + offset_y
             final_z = rz + 0.30 
 
             self._log(f"Teleporting {package_id} to robot ({final_x:.2f}, {final_y:.2f})...")
@@ -280,7 +285,7 @@ class FulfillOrderServer(Node):
             return FulfillOrder.Result(success=False, message="TF Missing")
 
         # ---------------------------------------------------------
-        # 1. SPAWN ON SHELF
+        # 1. SPAWN ON SHELF (KEEP AS WORKING)
         # ---------------------------------------------------------
         feedback.stage = "spawning_package"
         feedback.progress = 0.05
@@ -302,7 +307,7 @@ class FulfillOrderServer(Node):
             self._log(f"Spawn Error: {e}")
 
         # ---------------------------------------------------------
-        # 2. GO TO SHELF
+        # 2. GO TO SHELF (KEEP AS WORKING)
         # ---------------------------------------------------------
         try:
             # APPROACH POSE: 0.55m in front of shelf center (x - 0.55)
@@ -332,7 +337,7 @@ class FulfillOrderServer(Node):
             return FulfillOrder.Result(success=False, message=str(e))
 
         # ---------------------------------------------------------
-        # 3. PICK (ATTACH)
+        # 3. PICK (ATTACH) - FIXED
         # ---------------------------------------------------------
         feedback.stage = "picking"
         feedback.progress = 0.50
@@ -350,25 +355,19 @@ class FulfillOrderServer(Node):
         self._backup_robot(1.5)
 
         # ---------------------------------------------------------
-        # 5. GO TO DELIVERY
+        # 5. GO TO DELIVERY (KEEP AS WORKING)
         # ---------------------------------------------------------
-        delivery_x = 0.0
-        delivery_y = 0.0
-        delivery_z = 0.0
-        
         try:
             tf_delivery = self.tf_buffer.lookup_transform('map', delivery_frame, rclpy.time.Time())
-            delivery_x = tf_delivery.transform.translation.x
-            delivery_y = tf_delivery.transform.translation.y
-            delivery_z = tf_delivery.transform.translation.z
+            delivery_frame_x = tf_delivery.transform.translation.x
+            delivery_frame_y = tf_delivery.transform.translation.y
             
-            # APPROACH POSE: 0.8m in front of delivery point
-            # Increased spacing (from 0.6 to 0.8) so robot doesn't stand inside the delivery zone
+            # Navigate to approach position
             delivery_approach = PoseStamped()
             delivery_approach.header.frame_id = 'map'
             delivery_approach.header.stamp = self.get_clock().now().to_msg()
-            delivery_approach.pose.position.x = delivery_x - 0.8
-            delivery_approach.pose.position.y = delivery_y
+            delivery_approach.pose.position.x = delivery_frame_x - 0.8
+            delivery_approach.pose.position.y = delivery_frame_y
             delivery_approach.pose.position.z = 0.0
             
             # Orientation: Face +X (Towards Delivery)
@@ -382,20 +381,27 @@ class FulfillOrderServer(Node):
             if not ok:
                 goal_handle.abort()
                 return FulfillOrder.Result(success=False, message=msg)
+                
+            # CALCULATE ACTUAL DELIVERY CENTER FOR PLACEMENT
+            # delivery_frame is at actual_delivery + 0.8 (from order_manager)
+            # So: actual_delivery = delivery_frame - 0.8
+            actual_delivery_x = delivery_frame_x - 0.8
+            actual_delivery_y = delivery_frame_y
+            
         except Exception as e:
              goal_handle.abort()
              return FulfillOrder.Result(success=False, message=f"Delivery Nav Error: {e}")
 
         # ---------------------------------------------------------
-        # 6. PLACE (DELIVER)
+        # 6. PLACE (DELIVER) - FIXED
         # ---------------------------------------------------------
         feedback.stage = "delivering"
         feedback.progress = 0.95
         goal_handle.publish_feedback(feedback)
         
-        # Place package AT the actual delivery point coordinates.
+        # Place package AT the ACTUAL delivery cylinder center
         # Fixed Height: 1.5m to land ON TOP of the 1.4m pillar.
-        self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, delivery_z)
+        self._place_package_at_delivery(pkg_id, actual_delivery_x, actual_delivery_y, 0.0)
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message="Success")
 

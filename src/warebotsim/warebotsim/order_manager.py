@@ -126,17 +126,17 @@ class OrderManager(Node):
 
             self.static_tf_broadcaster.sendTransform(t)
 
-        # Base frames (kept)
+        # Base frames
         send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
 
-        # Lidar frames (kept)
+        # Lidar frames
         send('base_link', 'lidar_link', 0.20, 0.0, 0.75, 0.0)
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.75, 0.0)
 
         shelf_dx = float(self.get_parameter('shelf_approach_dx').value)
         deliv_dx = float(self.get_parameter('delivery_approach_dx').value)
 
-        # These are the MODEL CENTER poses from src/warebotsim/worlds/warehouse_world.sdf
+        # MODEL CENTER poses from src/warebotsim/worlds/warehouse_world.sdf
         shelves = {
             1: (2.2, 1.5),
             2: (1.8, -0.2),
@@ -148,12 +148,10 @@ class OrderManager(Node):
             3: (-2.5, -2.2),
         }
 
-        # Publish TF targets as APPROACH frames (not centers)
-        # shelf_X is left of shelf center, yaw 0 (facing +X)
+        # Publish approach frames
         for sid, (cx, cy) in shelves.items():
             send('map', f'shelf_{sid}', cx + shelf_dx, cy, 0.0, 0.0)
 
-        # delivery_X is right of delivery center, yaw pi (facing -X toward delivery)
         for did, (cx, cy) in deliveries.items():
             send('map', f'delivery_{did}', cx + deliv_dx, cy, 0.0, math.pi)
 

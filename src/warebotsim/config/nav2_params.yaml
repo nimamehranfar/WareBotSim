@@ -101,15 +101,15 @@ controller_server:
       # Keep XY tolerance as you had (prevents hunting), but tighten yaw hard:
       # 0.05 rad ~= 2.9 degrees
       xy_goal_tolerance: 0.30
-      yaw_goal_tolerance: 0.05
+      yaw_goal_tolerance: 0.15
       stateful: true
 
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: false
 
-      # BACKWARDS
-      min_vel_x: -0.05
+      # BACKWARDS & SPEEDS
+      min_vel_x: -0.55        # CHANGED: Allow full speed backwards
       max_vel_x: 0.55
       max_vel_theta: 1.0
 
@@ -117,10 +117,11 @@ controller_server:
       max_speed_xy: 0.55
       min_speed_theta: -0.1
 
-      acc_lim_x: 1.0
-      acc_lim_theta: 2.0
-      decel_lim_x: -1.0
-      decel_lim_theta: -2.0
+      # ACCELERATION (Smoother to prevent tilt)
+      acc_lim_x: 0.5          # LOWERED from 1.0
+      acc_lim_theta: 1.5      # LOWERED from 2.0
+      decel_lim_x: -0.5       # LOWERED braking power (was -1.0)
+      decel_lim_theta: -1.5
 
       vx_samples: 20
       vtheta_samples: 20
@@ -128,30 +129,17 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-
-      # Must match goal_checker to let DWB enforce the final heading
       xy_goal_tolerance: 0.30
-
-      # IMPORTANT: consider "stopped" at a much lower speed
-      # Otherwise it may claim it’s stopped while still drifting/adjusting.
       trans_stopped_velocity: 0.05
-
       stateful: true
-
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-
       BaseObstacle.scale: 0.02
-
-      # Alignment critics (keep your anti-hunting settings)
       PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 24.0
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-
-      # Make RotateToGoal dominant near goal so it actually finishes the heading
-      # RotateToGoal is designed specifically for final heading alignment near goal. :contentReference[oaicite:1]{index=1}
       RotateToGoal.scale: 148.0
       RotateToGoal.slowing_factor: 3.0
       RotateToGoal.lookahead_time: -1.0
@@ -168,7 +156,8 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.25
+      # rectangular footprint for Jackal (approx 0.52x0.42 + padding)
+      footprint: "[ [0.28, 0.24], [0.28, -0.24], [-0.28, -0.24], [-0.28, 0.24] ]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       always_send_full_costmap: true
       transform_tolerance: 1.0
@@ -207,7 +196,8 @@ global_costmap:
       robot_base_frame: "base_link"
       resolution: 0.05
       track_unknown_space: true
-      robot_radius: 0.25
+      # rectangular footprint for Jackal (approx 0.52x0.42 + padding)
+      footprint: "[ [0.28, 0.24], [0.28, -0.24], [-0.28, -0.24], [-0.28, 0.24] ]"
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       always_send_full_costmap: true
       transform_tolerance: 1.0

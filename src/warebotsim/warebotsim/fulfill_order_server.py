@@ -120,45 +120,61 @@ class FulfillOrderServer(Node):
             self.get_logger().error(f"Spawn exception: {e}")
             return False
 
+    def _rotate_in_place(self, goal_handle, target_yaw: float) -> bool:
+        """Rotates robot to specific yaw using Nav2 before moving."""
+        try:
+            # Get current position to stay in place
+            tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
+            
+            pose = PoseStamped()
+            pose.header.frame_id = 'map'
+            pose.header.stamp = self.get_clock().now().to_msg()
+            pose.pose.position.x = tf.transform.translation.x
+            pose.pose.position.y = tf.transform.translation.y
+            pose.pose.position.z = 0.0
+            
+            # Orientation: Z-rotation only
+            pose.pose.orientation.x = 0.0
+            pose.pose.orientation.y = 0.0
+            pose.pose.orientation.z = math.sin(target_yaw / 2.0)
+            pose.pose.orientation.w = math.cos(target_yaw / 2.0)
+
+            self._log(f"Rotating to yaw={math.degrees(target_yaw):.1f} deg...")
+            ok, msg = self._nav2_go_to_pose(goal_handle, pose, "rotating", 0.0, 0.0)
+            return ok
+        except Exception as e:
+            self._log(f"Rotation Error: {e}")
+            return False
+
     def _attach_package_to_robot(self, package_id: str) -> bool:
-        """Teleport package to center of robot, perfectly aligned with robot's yaw."""
+        """Teleport package to center of robot, matching robot tilt."""
         try:
             tf = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
             
-            # Robot Position
             rx = tf.transform.translation.x
             ry = tf.transform.translation.y
             rz = tf.transform.translation.z
-
-            # Get Robot Quaternion directly
+            
+            # FIX: Use Robot Quaternion directly. Do not flatten.
+            # This prevents package corners from digging into the plate when robot is tilted.
             q_robot = tf.transform.rotation
             
-            # Use q_robot directly. Do NOT flatten pitch/roll.
-            # This ensures the package sits flush on the robot plate even if the robot is tilted.
-            
-            # Place package at CENTER of robot (no offset)
             final_x = rx
             final_y = ry
             final_z = rz + 0.30
 
-            self._log(f"Attaching {package_id} to robot center at ({final_x:.2f}, {final_y:.2f})...")
+            self._log(f"Attaching {package_id} to robot...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                # USE q_robot fields directly here:
                 '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q_robot.x}, y: {q_robot.y}, z: {q_robot.z}, w: {q_robot.w}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                self._log("Attach success!")
-                return True
-            else:
-                self.get_logger().error(f"Attach failed: {result.stderr}")
-                return False
+            return (result.returncode == 0)
         except Exception as e:
             self.get_logger().error(f"Attach exception: {e}")
             return False
@@ -208,6 +224,24 @@ class FulfillOrderServer(Node):
         self.vel_pub.publish(msg)
         self._log("Backup complete.")
 
+    def _rotate_180(self):
+        """Rotate approx 180 degrees to face away from shelf."""
+        self._log("Rotating to face delivery...")
+        msg = TwistStamped()
+        msg.header.frame_id = 'base_link'
+        msg.twist.angular.z = 1.0  # Rotate at 1 rad/s
+        
+        # Rotate for ~3.2 seconds (approx Pi radians)
+        end_time = time.time() + 3.2
+        while time.time() < end_time:
+            msg.header.stamp = self.get_clock().now().to_msg()
+            self.vel_pub.publish(msg)
+            time.sleep(0.1)
+            
+        # Stop rotation
+        msg.twist.angular.z = 0.0
+        self.vel_pub.publish(msg)
+    
     def _nav2_go_to_pose(self, goal_handle, pose: PoseStamped, stage_prefix: str,
                           p_min: float, p_max: float) -> tuple[bool, str]:
         
@@ -299,6 +333,11 @@ class FulfillOrderServer(Node):
         # 2. GO TO SHELF - USE TF FRAME DIRECTLY
         # ---------------------------------------------------------
         try:
+            # FIX: Rotate to face East (0.0) for shelves BEFORE moving
+            if not self._rotate_in_place(goal_handle, 0.0):
+                goal_handle.abort()
+                return FulfillOrder.Result(success=False, message="Rotation Failed")
+            
             # Navigate to the shelf approach frame published by order_manager
             # This frame already has correct position and orientation
             shelf_approach_pose = self._pose_from_tf(shelf_frame)
@@ -331,6 +370,11 @@ class FulfillOrderServer(Node):
         # 4. BACKUP (CLEAR SHELF)
         # ---------------------------------------------------------
         self._backup_robot(3.0)
+        # self._rotate_180()  # Face the delivery points before asking Nav2 to plan
+        # FIX: Rotate to face West (PI) for delivery BEFORE moving
+        if not self._rotate_in_place(goal_handle, math.pi):
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message="Rotation Failed")
 
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY - USE TF FRAME DIRECTLY
@@ -341,9 +385,11 @@ class FulfillOrderServer(Node):
             
             # For package placement, calculate actual delivery center
             # order_manager offsets delivery_frame by +0.8 from actual center
-            actual_delivery_x = delivery_approach_pose.pose.position.x - 0.4
+            actual_delivery_x = delivery_approach_pose.pose.position.x - 0.8
             actual_delivery_y = delivery_approach_pose.pose.position.y
             
+            delivery_approach_pose.pose.position.x=delivery_approach_pose.pose.position.x+0.4
+
             self._log(f"Navigating to delivery at ({delivery_approach_pose.pose.position.x:.2f}, {delivery_approach_pose.pose.position.y:.2f})")
 
             ok, msg = self._nav2_go_to_pose(goal_handle, delivery_approach_pose, "goto_delivery", 0.55, 0.90)

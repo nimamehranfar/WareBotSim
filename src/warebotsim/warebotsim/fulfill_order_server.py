@@ -130,27 +130,26 @@ class FulfillOrderServer(Node):
             ry = tf.transform.translation.y
             rz = tf.transform.translation.z
 
-            # Get Yaw from Robot Quaternion
+            # Get Robot Quaternion directly
             q_robot = tf.transform.rotation
-            (roll, pitch, yaw) = euler_from_quaternion([q_robot.x, q_robot.y, q_robot.z, q_robot.w])
             
-            # Create quaternion aligned with robot's yaw (flat, no pitch/roll)
-            q_package = quaternion_from_euler(0, 0, yaw)
-
+            # Use q_robot directly. Do NOT flatten pitch/roll.
+            # This ensures the package sits flush on the robot plate even if the robot is tilted.
+            
             # Place package at CENTER of robot (no offset)
-            # Just raise it above the robot base
             final_x = rx
             final_y = ry
             final_z = rz + 0.30
 
-            self._log(f"Attaching {package_id} to robot center at ({final_x:.2f}, {final_y:.2f}) yaw={math.degrees(yaw):.1f}°...")
+            self._log(f"Attaching {package_id} to robot center at ({final_x:.2f}, {final_y:.2f})...")
             
             cmd = [
                 'gz', 'service', '-s', '/world/warehouse_world/set_pose',
                 '--reqtype', 'gz.msgs.Pose',
                 '--reptype', 'gz.msgs.Boolean',
                 '--timeout', '2000',
-                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q_package[0]}, y: {q_package[1]}, z: {q_package[2]}, w: {q_package[3]}}}'
+                # USE q_robot fields directly here:
+                '--req', f'name: "{package_id}", position: {{x: {final_x}, y: {final_y}, z: {final_z}}} orientation: {{x: {q_robot.x}, y: {q_robot.y}, z: {q_robot.z}, w: {q_robot.w}}}'
             ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -303,9 +302,9 @@ class FulfillOrderServer(Node):
             # Navigate to the shelf approach frame published by order_manager
             # This frame already has correct position and orientation
             shelf_approach_pose = self._pose_from_tf(shelf_frame)
-            shelf_approach_pose.pose.position.x=shelf_approach_pose.pose.position.x-0.55
+            shelf_approach_pose.pose.position.x=shelf_approach_pose.pose.position.x-0.5
             
-            self._log(f"Navigating to shelf at ({shelf_approach_pose.pose.position.x-0.55:.2f}, {shelf_approach_pose.pose.position.y:.2f})")
+            self._log(f"Navigating to shelf at ({shelf_approach_pose.pose.position.x-0.5:.2f}, {shelf_approach_pose.pose.position.y:.2f})")
 
             ok, msg = self._nav2_go_to_pose(goal_handle, shelf_approach_pose, "goto_shelf", 0.1, 0.45)
             if not ok:
@@ -331,7 +330,7 @@ class FulfillOrderServer(Node):
         # ---------------------------------------------------------
         # 4. BACKUP (CLEAR SHELF)
         # ---------------------------------------------------------
-        self._backup_robot(1.5)
+        self._backup_robot(3.0)
 
         # ---------------------------------------------------------
         # 5. GO TO DELIVERY - USE TF FRAME DIRECTLY
@@ -342,7 +341,7 @@ class FulfillOrderServer(Node):
             
             # For package placement, calculate actual delivery center
             # order_manager offsets delivery_frame by +0.8 from actual center
-            actual_delivery_x = delivery_approach_pose.pose.position.x - 0.8
+            actual_delivery_x = delivery_approach_pose.pose.position.x - 0.4
             actual_delivery_y = delivery_approach_pose.pose.position.y
             
             self._log(f"Navigating to delivery at ({delivery_approach_pose.pose.position.x:.2f}, {delivery_approach_pose.pose.position.y:.2f})")

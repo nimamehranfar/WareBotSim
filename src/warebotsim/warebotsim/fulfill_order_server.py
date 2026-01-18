@@ -341,9 +341,9 @@ class FulfillOrderServer(Node):
             # Navigate to the shelf approach frame published by order_manager
             # This frame already has correct position and orientation
             shelf_approach_pose = self._pose_from_tf(shelf_frame)
-            shelf_approach_pose.pose.position.x=shelf_approach_pose.pose.position.x-0.5
+            shelf_approach_pose.pose.position.x=shelf_approach_pose.pose.position.x-0.2
             
-            self._log(f"Navigating to shelf at ({shelf_approach_pose.pose.position.x-0.5:.2f}, {shelf_approach_pose.pose.position.y:.2f})")
+            self._log(f"Navigating to shelf at ({shelf_approach_pose.pose.position.x-0.2:.2f}, {shelf_approach_pose.pose.position.y:.2f})")
 
             ok, msg = self._nav2_go_to_pose(goal_handle, shelf_approach_pose, "goto_shelf", 0.1, 0.45)
             if not ok:
@@ -388,9 +388,9 @@ class FulfillOrderServer(Node):
             actual_delivery_x = delivery_approach_pose.pose.position.x - 0.8
             actual_delivery_y = delivery_approach_pose.pose.position.y
             
-            delivery_approach_pose.pose.position.x=delivery_approach_pose.pose.position.x+0.4
+            delivery_approach_pose.pose.position.x=delivery_approach_pose.pose.position.x+0.8
 
-            self._log(f"Navigating to delivery at ({delivery_approach_pose.pose.position.x:.2f}, {delivery_approach_pose.pose.position.y:.2f})")
+            self._log(f"Navigating to delivery at ({delivery_approach_pose.pose.position.x+0.8:.2f}, {delivery_approach_pose.pose.position.y:.2f})")
 
             ok, msg = self._nav2_go_to_pose(goal_handle, delivery_approach_pose, "goto_delivery", 0.55, 0.90)
             if not ok:

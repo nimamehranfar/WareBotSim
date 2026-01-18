@@ -101,7 +101,7 @@ controller_server:
       # Keep XY tolerance as you had (prevents hunting), but tighten yaw hard:
       # 0.05 rad ~= 2.9 degrees
       xy_goal_tolerance: 0.30
-      yaw_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.30
       stateful: true
 
     FollowPath:

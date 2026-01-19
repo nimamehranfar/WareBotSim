@@ -21,10 +21,6 @@ class OrderManager(Node):
         self.shelf_ids = set(self.get_parameter('shelf_ids').value)
         self.delivery_ids = set(self.get_parameter('delivery_ids').value)
 
-        # Approach offsets (meters)
-        self.declare_parameter('shelf_approach_dx', -0.8)
-        self.declare_parameter('delivery_approach_dx', +0.8)
-
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
         self._publish_static_frames()
 
@@ -130,9 +126,6 @@ class OrderManager(Node):
         send('base_link', 'lidar_link', 0.20, 0.0, 0.75, 0.0)
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.75, 0.0)
 
-        shelf_dx = float(self.get_parameter('shelf_approach_dx').value)
-        deliv_dx = float(self.get_parameter('delivery_approach_dx').value)
-
         # UPDATED COORDINATES from warehouse_world.sdf
         shelves = {
             1: (2.2, 1.5),
@@ -145,12 +138,13 @@ class OrderManager(Node):
             3: (-2.5, -2.2),
         }
 
-        # Publish Nav2 target frames in MAP frame
+        # Publish semantic frames in MAP frame (CENTERS, no approach offsets).
+        # All approach offsets are handled in fulfill_order_server to avoid double-offset confusion.
         for sid, (x, y) in shelves.items():
-            send('map', f'shelf_{sid}', x + shelf_dx, y, 0.0, 0.0)  # Approach from left
+            send('map', f'shelf_{sid}', x, y, 0.0, 0.0)
 
         for did, (x, y) in deliveries.items():
-            send('map', f'delivery_{did}', x + deliv_dx, y, 0.0, math.pi)  # Approach from right
+            send('map', f'delivery_{did}', x, y, 0.0, math.pi)
 
 
 def main():

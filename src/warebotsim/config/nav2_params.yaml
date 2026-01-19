@@ -113,9 +113,9 @@ controller_server:
       max_vel_x: 0.55
       max_vel_theta: 1.0
 
-      min_speed_xy: 0.15
+      min_speed_xy: 0.0
       max_speed_xy: 0.55
-      min_speed_theta: -0.1
+      min_speed_theta: 0.0
 
       # ACCELERATION (Smoother to prevent tilt)
       acc_lim_x: 0.5          # LOWERED from 1.0
@@ -123,9 +123,9 @@ controller_server:
       decel_lim_x: -0.5       # LOWERED braking power (was -1.0)
       decel_lim_theta: -1.5
 
-      vx_samples: 20
+      vx_samples: 30
       vtheta_samples: 20
-      sim_time: 1.7
+      sim_time: 1.2
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
@@ -133,7 +133,7 @@ controller_server:
       trans_stopped_velocity: 0.05
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.02
+      BaseObstacle.scale: 0.20
       PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 24.0

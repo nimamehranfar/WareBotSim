@@ -117,13 +117,54 @@
       <pose>2.2 1.5 0.7 0 0 0</pose>
       <link name="link">
         <collision name="collision"><geometry><box><size>0.8 0.3 1.4</size></box></geometry></collision>
-        <visual name="visual">
+        <!-- Visual-only "warehouse shelf" (collision remains unchanged to avoid remapping). -->
+        <visual name="shelf_back_panel">
           <cast_shadows>false</cast_shadows>
-          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
-          <material>
-            <ambient>0.9 0.7 0.2 0.3</ambient>
-            <diffuse>0.9 0.7 0.2 0.3</diffuse>
-          </material>
+          <pose>0 -0.14 0 0 0 0</pose>
+          <geometry><box><size>0.8 0.02 1.4</size></box></geometry>
+          <material><ambient>0.18 0.18 0.18 1</ambient><diffuse>0.18 0.18 0.18 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fl">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fr">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_bl">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_br">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_bottom">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_mid">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.00 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_top">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -133,13 +174,54 @@
       <pose>1.8 -0.2 0.7 0 0 0</pose>
       <link name="link">
         <collision name="collision"><geometry><box><size>0.8 0.3 1.4</size></box></geometry></collision>
-        <visual name="visual">
+        <!-- Visual-only "warehouse shelf" (collision remains unchanged to avoid remapping). -->
+        <visual name="shelf_back_panel">
           <cast_shadows>false</cast_shadows>
-          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
-          <material>
-            <ambient>0.9 0.7 0.2 0.3</ambient>
-            <diffuse>0.9 0.7 0.2 0.3</diffuse>
-          </material>
+          <pose>0 -0.14 0 0 0 0</pose>
+          <geometry><box><size>0.8 0.02 1.4</size></box></geometry>
+          <material><ambient>0.18 0.18 0.18 1</ambient><diffuse>0.18 0.18 0.18 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fl">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fr">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_bl">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_br">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_bottom">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_mid">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.00 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_top">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -149,13 +231,54 @@
       <pose>2.5 -2.0 0.7 0 0 0</pose>
       <link name="link">
         <collision name="collision"><geometry><box><size>0.8 0.3 1.4</size></box></geometry></collision>
-        <visual name="visual">
+        <!-- Visual-only "warehouse shelf" (collision remains unchanged to avoid remapping). -->
+        <visual name="shelf_back_panel">
           <cast_shadows>false</cast_shadows>
-          <geometry><box><size>0.8 0.3 1.4</size></box></geometry>
-          <material>
-            <ambient>0.9 0.7 0.2 0.3</ambient>
-            <diffuse>0.9 0.7 0.2 0.3</diffuse>
-          </material>
+          <pose>0 -0.14 0 0 0 0</pose>
+          <geometry><box><size>0.8 0.02 1.4</size></box></geometry>
+          <material><ambient>0.18 0.18 0.18 1</ambient><diffuse>0.18 0.18 0.18 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fl">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_fr">
+          <cast_shadows>false</cast_shadows>
+          <pose>0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_bl">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_post_br">
+          <cast_shadows>false</cast_shadows>
+          <pose>-0.38 -0.13 0 0 0 0</pose>
+          <geometry><box><size>0.04 0.04 1.4</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_bottom">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_mid">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.00 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
+        </visual>
+        <visual name="shelf_board_top">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.65 0 0 0</pose>
+          <geometry><box><size>0.76 0.26 0.03</size></box></geometry>
+          <material><ambient>0.62 0.45 0.25 1</ambient><diffuse>0.62 0.45 0.25 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -167,13 +290,29 @@
         <collision name="collision">
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
         </collision>
-        <visual name="visual">
+        <!-- Visual-only delivery station (collision remains unchanged to avoid remapping). -->
+        <visual name="station_column">
           <cast_shadows>false</cast_shadows>
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
-          <material>
-            <ambient>0.1 0.8 0.1 0.3</ambient>
-            <diffuse>0.1 0.8 0.1 0.3</diffuse>
-          </material>
+          <material><ambient>0.10 0.55 0.10 1</ambient><diffuse>0.10 0.55 0.10 1</diffuse></material>
+        </visual>
+        <visual name="station_base">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.25</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_top_ring">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.22</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_target_disc">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.70 0 0 0</pose>
+          <geometry><cylinder><radius>0.20</radius><length>0.002</length></cylinder></geometry>
+          <material><ambient>0.90 0.90 0.90 1</ambient><diffuse>0.90 0.90 0.90 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -185,13 +324,29 @@
         <collision name="collision">
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
         </collision>
-        <visual name="visual">
+        <!-- Visual-only delivery station (collision remains unchanged to avoid remapping). -->
+        <visual name="station_column">
           <cast_shadows>false</cast_shadows>
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
-          <material>
-            <ambient>0.1 0.8 0.1 0.3</ambient>
-            <diffuse>0.1 0.8 0.1 0.3</diffuse>
-          </material>
+          <material><ambient>0.10 0.55 0.10 1</ambient><diffuse>0.10 0.55 0.10 1</diffuse></material>
+        </visual>
+        <visual name="station_base">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.25</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_top_ring">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.22</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_target_disc">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.70 0 0 0</pose>
+          <geometry><cylinder><radius>0.20</radius><length>0.002</length></cylinder></geometry>
+          <material><ambient>0.90 0.90 0.90 1</ambient><diffuse>0.90 0.90 0.90 1</diffuse></material>
         </visual>
       </link>
     </model>
@@ -203,13 +358,29 @@
         <collision name="collision">
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
         </collision>
-        <visual name="visual">
+        <!-- Visual-only delivery station (collision remains unchanged to avoid remapping). -->
+        <visual name="station_column">
           <cast_shadows>false</cast_shadows>
           <geometry><cylinder><radius>0.18</radius><length>1.4</length></cylinder></geometry>
-          <material>
-            <ambient>0.1 0.8 0.1 0.3</ambient>
-            <diffuse>0.1 0.8 0.1 0.3</diffuse>
-          </material>
+          <material><ambient>0.10 0.55 0.10 1</ambient><diffuse>0.10 0.55 0.10 1</diffuse></material>
+        </visual>
+        <visual name="station_base">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 -0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.25</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_top_ring">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.675 0 0 0</pose>
+          <geometry><cylinder><radius>0.22</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.16 0.16 0.16 1</ambient><diffuse>0.16 0.16 0.16 1</diffuse></material>
+        </visual>
+        <visual name="station_target_disc">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.70 0 0 0</pose>
+          <geometry><cylinder><radius>0.20</radius><length>0.002</length></cylinder></geometry>
+          <material><ambient>0.90 0.90 0.90 1</ambient><diffuse>0.90 0.90 0.90 1</diffuse></material>
         </visual>
       </link>
     </model>

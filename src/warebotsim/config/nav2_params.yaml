@@ -109,7 +109,7 @@ controller_server:
       debug_trajectory_details: false
 
       # BACKWARDS & SPEEDS
-      min_vel_x: -0.55        # CHANGED: Allow full speed backwards
+      min_vel_x: -0.15        # CHANGED: Allow full speed backwards
       max_vel_x: 0.55
       max_vel_theta: 1.0
 

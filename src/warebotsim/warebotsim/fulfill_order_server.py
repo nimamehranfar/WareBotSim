@@ -44,7 +44,7 @@ class FulfillOrderServer(Node):
         # Package attachment offset in robot base_link frame.
         # This fixes "diagonal robot => package lands on edge" by applying the offset in the robot frame,
         # not the world frame.
-        self.declare_parameter('package_mount_x', 0.10)
+        self.declare_parameter('package_mount_x', 0.0)
         self.declare_parameter('package_mount_y', 0.0)
         self.declare_parameter('package_mount_z', 0.30)
 

@@ -313,6 +313,7 @@ class FulfillOrderServer(Node):
         if not ok:
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message=msg)
+        time.sleep(0.5)
 
         # ------------------------------
         # 3) Pick (teleport package onto robot tray)
@@ -325,6 +326,7 @@ class FulfillOrderServer(Node):
         if not self._attach_package_to_robot(pkg_id):
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message='Attach failed')
+        time.sleep(0.5)
 
         # ------------------------------
         # 4) Retreat after pick (Nav2, avoids time-based backup)
@@ -355,11 +357,24 @@ class FulfillOrderServer(Node):
         fb.stage = 'delivering'
         fb.progress = 0.95
         goal_handle.publish_feedback(fb)
+        time.sleep(0.3)
 
         place_z = float(self.get_parameter('place_on_delivery_z').value)
         if not self._place_package_at_delivery(pkg_id, delivery_x, delivery_y, place_z):
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message='Place failed')
+
+        # ------------------------------
+        # 7) Post-drop reposition (Nav2)
+        # Keeps robot facing shelves for the next order (avoids long reverse driving).
+        post_dx = float(self.get_parameter('post_drop_retreat_dx').value)
+        if abs(post_dx) > 1e-6:
+            post_goal = self._pose_xy_yaw(delivery_x + delivery_approach_dx + post_dx, delivery_y, 0.0)
+            ok, msg = self._nav2_go_to_pose(goal_handle, post_goal, 'post_drop', 0.96, 0.99)
+            if not ok:
+                goal_handle.abort()
+                return FulfillOrder.Result(success=False, message=msg)
+
 
         goal_handle.succeed()
         return FulfillOrder.Result(success=True, message='Success')

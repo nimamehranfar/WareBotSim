@@ -44,11 +44,50 @@
           <cast_shadows>false</cast_shadows>
           <geometry><box><size>7 7 0.02</size></box></geometry>
           <material>
-            <ambient>0.9 0.9 0.9 1</ambient>
-            <diffuse>0.9 0.9 0.9 1</diffuse>
+            <ambient>0.55 0.55 0.55 1</ambient>
+            <diffuse>0.55 0.55 0.55 1</diffuse>
           </material>
         </visual>
-      </link>
+      
+        <!-- Visual-only warehouse floor markings (collision unchanged) -->
+        <visual name="floor_line_center">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.011 0 0 0</pose>
+          <geometry><box><size>7 0.05 0.002</size></box></geometry>
+          <material><ambient>0.95 0.85 0.15 1</ambient><diffuse>0.95 0.85 0.15 1</diffuse></material>
+        </visual>
+        <visual name="floor_line_y_pos">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 1.5 0.011 0 0 0</pose>
+          <geometry><box><size>7 0.04 0.002</size></box></geometry>
+          <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+        </visual>
+        <visual name="floor_line_y_neg">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 -1.5 0.011 0 0 0</pose>
+          <geometry><box><size>7 0.04 0.002</size></box></geometry>
+          <material><ambient>0.95 0.95 0.95 1</ambient><diffuse>0.95 0.95 0.95 1</diffuse></material>
+        </visual>
+        <!-- Expansion joint seams -->
+        <visual name="floor_seam_x_1">
+          <cast_shadows>false</cast_shadows>
+          <pose>-2.333 0 0.0105 0 0 0</pose>
+          <geometry><box><size>0.01 7 0.001</size></box></geometry>
+          <material><ambient>0.35 0.35 0.35 1</ambient><diffuse>0.35 0.35 0.35 1</diffuse></material>
+        </visual>
+        <visual name="floor_seam_x_2">
+          <cast_shadows>false</cast_shadows>
+          <pose>0 0 0.0105 0 0 0</pose>
+          <geometry><box><size>0.01 7 0.001</size></box></geometry>
+          <material><ambient>0.35 0.35 0.35 1</ambient><diffuse>0.35 0.35 0.35 1</diffuse></material>
+        </visual>
+        <visual name="floor_seam_x_3">
+          <cast_shadows>false</cast_shadows>
+          <pose>2.333 0 0.0105 0 0 0</pose>
+          <geometry><box><size>0.01 7 0.001</size></box></geometry>
+          <material><ambient>0.35 0.35 0.35 1</ambient><diffuse>0.35 0.35 0.35 1</diffuse></material>
+        </visual>
+</link>
     </model>
 
     <model name="wall_back">
@@ -60,8 +99,8 @@
           <cast_shadows>false</cast_shadows>
           <geometry><box><size>7 0.1 2.0</size></box></geometry>
           <material>
-            <ambient>0.6 0.6 0.6 0.3</ambient>
-            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+            <ambient>0.65 0.65 0.65 0.95</ambient>
+            <diffuse>0.65 0.65 0.65 0.95</diffuse>
           </material>
         </visual>
       </link>
@@ -75,8 +114,8 @@
           <cast_shadows>false</cast_shadows>
           <geometry><box><size>7 0.1 2.0</size></box></geometry>
           <material>
-            <ambient>0.6 0.6 0.6 0.3</ambient>
-            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+            <ambient>0.65 0.65 0.65 0.95</ambient>
+            <diffuse>0.65 0.65 0.65 0.95</diffuse>
           </material>
         </visual>
       </link>
@@ -90,8 +129,8 @@
           <cast_shadows>false</cast_shadows>
           <geometry><box><size>0.1 7 2.0</size></box></geometry>
           <material>
-            <ambient>0.6 0.6 0.6 0.3</ambient>
-            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+            <ambient>0.65 0.65 0.65 0.95</ambient>
+            <diffuse>0.65 0.65 0.65 0.95</diffuse>
           </material>
         </visual>
       </link>
@@ -105,8 +144,8 @@
           <cast_shadows>false</cast_shadows>
           <geometry><box><size>0.1 7 2.0</size></box></geometry>
           <material>
-            <ambient>0.6 0.6 0.6 0.3</ambient>
-            <diffuse>0.6 0.6 0.6 0.3</diffuse>
+            <ambient>0.65 0.65 0.65 0.95</ambient>
+            <diffuse>0.65 0.65 0.65 0.95</diffuse>
           </material>
         </visual>
       </link>

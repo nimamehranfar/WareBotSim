@@ -29,8 +29,8 @@ class FulfillOrderServer(Node):
         super().__init__('fulfill_order_server')
 
         # Approach offsets (meters):
-        # Shelves live at +X (east). We approach from the left/west => negative dx.
-        # Deliveries live at -X (west). We approach from the right/east => positive dx.
+        # Shelves live at +X (east).
+        # Deliveries live at -X (west).
         self.declare_parameter('shelf_approach_dx', -1.25)
         self.declare_parameter('shelf_2_approach_dx', -0.85)
         self.declare_parameter('delivery_approach_dx', 0.55)
@@ -128,7 +128,6 @@ class FulfillOrderServer(Node):
     def _spawn_package(self, package_id: str, x: float, y: float, z: float) -> bool:
         """Spawn package at specific coordinates."""
         try:
-            # Keep collision footprint exactly the same (0.15 cube), but improve visuals.
             # Visuals: base cardboard + tape strips.
             sdf_content = (
                 "<?xml version='1.0'?>"
@@ -196,12 +195,7 @@ class FulfillOrderServer(Node):
             return False
 
     def _attach_package_to_robot(self, package_id: str) -> bool:
-        """Teleport package to the robot's pickup tray.
-
-        Key fix:
-        - Apply the mount offset in the robot (base_link) frame, then rotate it into map.
-        - Keep the package upright (yaw-only), so it doesn't inherit roll/pitch and slide.
-        """
+        # Teleport package to the robot's pickup tray.
         try:
             rx, ry, rz, yaw = self._lookup_base_pose()
 
@@ -229,7 +223,6 @@ class FulfillOrderServer(Node):
     # ------------------------------
     # Nav2 helper
     # ------------------------------
-
 
     def _publish_feedback(self, goal_handle, stage: str, progress: float) -> None:
         fb = FulfillOrder.Feedback()
@@ -295,7 +288,7 @@ class FulfillOrderServer(Node):
         progress: float,
         publish_period_s: float = 0.5,
     ) -> bool:
-        """Time-based straight motion via cmd_vel."""
+        # Time-based straight motion via cmd_vel.
         if abs(distance) < 0.01:
             return True
 
@@ -347,7 +340,7 @@ class FulfillOrderServer(Node):
         progress: float,
         publish_period_s: float = 0.5,
     ) -> bool:
-        """Rotate in place (cmd_vel) until yaw is within tolerance."""
+        # Rotate in place (cmd_vel) until yaw is within tolerance.
         angular_speed = float(self.get_parameter('rotation_angular_speed').value)
         tolerance = float(self.get_parameter('rotation_tolerance').value)
 
@@ -396,7 +389,6 @@ class FulfillOrderServer(Node):
     # ------------------------------
     # Action execution
     # ------------------------------
-
 
     def execute_callback(self, goal_handle):
         req = goal_handle.request

@@ -14,7 +14,7 @@ class OrderManager(Node):
     def __init__(self):
         super().__init__('order_manager')
 
-        # Updated to include ID 3
+        # IDs
         self.declare_parameter('shelf_ids', [1, 2, 3])
         self.declare_parameter('delivery_ids', [1, 2, 3])
 
@@ -122,11 +122,11 @@ class OrderManager(Node):
         # Base frames
         send('base_link', 'base_footprint', 0.0, 0.0, 0.0, 0.0)
         
-        # UPDATED: LIDAR is now high up at 0.75m
+        # LIDAR is now high up at 0.75m
         send('base_link', 'lidar_link', 0.20, 0.0, 0.75, 0.0)
         send('base_link', 'jackal/lidar_link/lidar', 0.20, 0.0, 0.75, 0.0)
 
-        # UPDATED COORDINATES from warehouse_world.sdf
+        # COORDINATES from warehouse_world.sdf
         shelves = {
             1: (2.2, 1.5),
             2: (1.8, -0.2),
@@ -138,8 +138,7 @@ class OrderManager(Node):
             3: (-2.5, -2.2),
         }
 
-        # Publish semantic frames in MAP frame (CENTERS, no approach offsets).
-        # All approach offsets are handled in fulfill_order_server to keep the navigation offsets in one place.
+        # Publish semantic frames in MAP frame
         for sid, (x, y) in shelves.items():
             send('map', f'shelf_{sid}', x, y, 0.0, 0.0)
 

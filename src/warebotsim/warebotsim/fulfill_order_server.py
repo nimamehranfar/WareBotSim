@@ -497,7 +497,7 @@ class FulfillOrderServer(Node):
 
         # 7) Post-drop retreat and rotate to face shelves (cmd_vel)
         retreat_dist = float(self.get_parameter('post_drop_retreat_distance').value)
-        if not self._move_linear(goal_handle, retreat_dist, retreat_speed, 'retreat', progress):
+        if not self._move_linear(goal_handle, -retreat_dist, retreat_speed, 'retreat', progress):
             goal_handle.abort()
             return FulfillOrder.Result(success=False, message='Retreat failed')
 

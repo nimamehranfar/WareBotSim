@@ -6,13 +6,17 @@ from geometry_msgs.msg import TransformStamped
 
 
 class StatePublisher(Node):
+    """
+    Publishes TF transform from odometry data.
+    
+    Subscribes to /odom from Gazebo and broadcasts the transform
+    as odom -> base_link, ensuring canonical frame names for Nav2.
+    """
+    
     def __init__(self):
         super().__init__('state_publisher')
 
-        # Incoming odom topic from Gazebo
         self.odom_topic = '/odom'
-
-        # Canonical frames REQUIRED by SLAM / Nav2
         self.odom_frame = 'odom'
         self.base_frame = 'base_link'
 
@@ -27,14 +31,14 @@ class StatePublisher(Node):
 
     def _odom_callback(self, msg: Odometry):
         """
-        Normalize Gazebo odometry frames:
-        - Whatever Gazebo uses → publish as odom → base_link
+        Convert odometry message to TF transform.
+        
+        Normalizes frame IDs to ensure compatibility with Nav2:
+        - Parent frame: odom
+        - Child frame: base_link
         """
-
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
-
-        # FORCE canonical frame names
         t.header.frame_id = self.odom_frame
         t.child_frame_id = self.base_frame
 

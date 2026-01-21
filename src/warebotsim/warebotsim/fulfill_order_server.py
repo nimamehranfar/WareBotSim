@@ -8,7 +8,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Twist
 from nav2_msgs.action import NavigateToPose
 
 from tf2_ros import Buffer, TransformListener
@@ -35,12 +35,17 @@ class FulfillOrderServer(Node):
         # Shelves live at +X (east). We approach from the left/west => negative dx.
         # Deliveries live at -X (west). We approach from the right/east => positive dx.
         self.declare_parameter('shelf_approach_dx', -1.25)
+        self.declare_parameter('shelf_2_approach_dx', -1.45)
         self.declare_parameter('delivery_approach_dx', 0.45)
 
-        # Optional retreat after pickup (helps avoid "stuck on inflation" / shelf collision)
-        # This retreat is still Nav2 navigation (not time-based cmd_vel).
-        self.declare_parameter('post_pick_retreat_dx', -0.90)
-        self.declare_parameter('post_drop_retreat_dx', 0.90)
+        # Retreat distances for cmd_vel-based motion
+        self.declare_parameter('post_pick_retreat_distance', 0.90)
+        self.declare_parameter('post_drop_retreat_distance', 0.90)
+        self.declare_parameter('retreat_linear_speed', 0.25)
+        
+        # Rotation parameters
+        self.declare_parameter('rotation_angular_speed', 0.50)
+        self.declare_parameter('rotation_tolerance', 0.10)
 
         # Package attachment offset in robot base_link frame.
         # This fixes "diagonal robot => package lands on edge" by applying the offset in the robot frame,
@@ -62,6 +67,7 @@ class FulfillOrderServer(Node):
         self.nav2_client = ActionClient(
             self, NavigateToPose, '/navigate_to_pose', callback_group=self.cb_group
         )
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
         self._as = ActionServer(
             self,
@@ -273,6 +279,82 @@ class FulfillOrderServer(Node):
             return False, f'Nav2 failed (status={status})'
         return True, 'ok'
 
+
+    def _move_linear(self, goal_handle, distance: float, speed: float) -> bool:
+        """Move straight using cmd_vel with simulation time awareness"""
+        if abs(distance) < 0.01:
+            return True
+            
+        direction = 1.0 if distance > 0 else -1.0
+        speed = abs(speed) * direction
+        
+        duration = abs(distance / speed)
+        
+        twist = Twist()
+        twist.linear.x = speed
+        
+        rate = self.create_rate(20)
+        start_time = self.get_clock().now()
+        
+        while True:
+            if goal_handle.is_cancel_requested:
+                twist.linear.x = 0.0
+                self.cmd_vel_pub.publish(twist)
+                goal_handle.canceled()
+                return False
+                
+            elapsed = (self.get_clock().now() - start_time).nanoseconds / 1e9
+            if elapsed >= duration:
+                break
+                
+            self.cmd_vel_pub.publish(twist)
+            rate.sleep()
+        
+        twist.linear.x = 0.0
+        self.cmd_vel_pub.publish(twist)
+        time.sleep(0.3)
+        return True
+
+    def _rotate_to_yaw(self, goal_handle, target_yaw: float) -> bool:
+        """Rotate to target yaw using cmd_vel"""
+        angular_speed = float(self.get_parameter('rotation_angular_speed').value)
+        tolerance = float(self.get_parameter('rotation_tolerance').value)
+        
+        rate = self.create_rate(20)
+        twist = Twist()
+        
+        while True:
+            if goal_handle.is_cancel_requested:
+                twist.angular.z = 0.0
+                self.cmd_vel_pub.publish(twist)
+                goal_handle.canceled()
+                return False
+            
+            try:
+                _, _, _, current_yaw = self._lookup_base_pose()
+            except:
+                continue
+            
+            angle_diff = target_yaw - current_yaw
+            # Normalize to [-pi, pi]
+            while angle_diff > math.pi:
+                angle_diff -= 2 * math.pi
+            while angle_diff < -math.pi:
+                angle_diff += 2 * math.pi
+            
+            if abs(angle_diff) < tolerance:
+                break
+            
+            twist.angular.z = angular_speed if angle_diff > 0 else -angular_speed
+            self.cmd_vel_pub.publish(twist)
+            rate.sleep()
+        
+        twist.angular.z = 0.0
+        self.cmd_vel_pub.publish(twist)
+        time.sleep(0.3)
+        return True
+
+
     # ------------------------------
     # Action execution
     # ------------------------------
@@ -332,13 +414,33 @@ class FulfillOrderServer(Node):
         # ------------------------------
         # 4) Retreat after pick (Nav2, avoids time-based backup)
         # ------------------------------
-        retreat_dx = float(self.get_parameter('post_pick_retreat_dx').value)
-        if abs(retreat_dx) > 1e-6:
-            retreat_goal = self._pose_xy_yaw(shelf_x + shelf_approach_dx + retreat_dx, shelf_y, math.pi)
-            ok, msg = self._nav2_go_to_pose(goal_handle, retreat_goal, 'retreat', 0.52, 0.60)
-            if not ok:
-                goal_handle.abort()
-                return FulfillOrder.Result(success=False, message=msg)
+                # Phase 4: Retreat from shelf (45%)
+        fb.stage = 'retreating_from_shelf'
+        fb.progress = 0.42
+        goal_handle.publish_feedback(fb)
+
+        retreat_dist = float(self.get_parameter('post_pick_retreat_distance').value)
+        retreat_speed = float(self.get_parameter('retreat_linear_speed').value)
+        if not self._move_linear(goal_handle, -retreat_dist, retreat_speed):
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message='Retreat failed')
+
+        fb.stage = 'retreat_complete'
+        fb.progress = 0.45
+        goal_handle.publish_feedback(fb)
+
+        # Phase 5: Rotate to face delivery (50%)
+        fb.stage = 'rotating_to_delivery'
+        fb.progress = 0.47
+        goal_handle.publish_feedback(fb)
+
+        if not self._rotate_to_yaw(goal_handle, math.pi):
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message='Rotation failed')
+
+        fb.stage = 'rotation_complete'
+        fb.progress = 0.50
+        goal_handle.publish_feedback(fb)
 
         # ------------------------------
         # 5) Go to delivery approach pose (Nav2)
@@ -368,13 +470,32 @@ class FulfillOrderServer(Node):
         # ------------------------------
         # 7) Post-drop reposition (Nav2)
         # Keeps robot facing shelves for the next order (avoids long reverse driving).
-        post_dx = float(self.get_parameter('post_drop_retreat_dx').value)
-        if abs(post_dx) > 1e-6:
-            post_goal = self._pose_xy_yaw(delivery_x + delivery_approach_dx + post_dx, delivery_y, 0.0)
-            ok, msg = self._nav2_go_to_pose(goal_handle, post_goal, 'post_drop', 0.96, 0.99)
-            if not ok:
-                goal_handle.abort()
-                return FulfillOrder.Result(success=False, message=msg)
+        # Phase 8: Retreat from delivery (95%)
+        fb.stage = 'retreating_from_delivery'
+        fb.progress = 0.92
+        goal_handle.publish_feedback(fb)
+
+        retreat_dist = float(self.get_parameter('post_drop_retreat_distance').value)
+        if not self._move_linear(goal_handle, retreat_dist, retreat_speed):
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message='Retreat failed')
+
+        fb.stage = 'retreat_complete'
+        fb.progress = 0.95
+        goal_handle.publish_feedback(fb)
+
+        # Phase 9: Rotate to face shelves (100%)
+        fb.stage = 'rotating_to_ready'
+        fb.progress = 0.97
+        goal_handle.publish_feedback(fb)
+
+        if not self._rotate_to_yaw(goal_handle, 0.0):
+            goal_handle.abort()
+            return FulfillOrder.Result(success=False, message='Final rotation failed')
+
+        fb.stage = 'order_complete'
+        fb.progress = 1.00
+        goal_handle.publish_feedback(fb)
 
 
         goal_handle.succeed()

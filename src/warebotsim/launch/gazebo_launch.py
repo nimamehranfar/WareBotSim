@@ -46,7 +46,6 @@ def generate_launch_description():
                 '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
                 '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                 '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-                # FIXED: Change Twist to TwistStamped to match Nav2 output
                 '/cmd_vel@geometry_msgs/msg/TwistStamped]gz.msgs.Twist',
             ],
             output='screen',

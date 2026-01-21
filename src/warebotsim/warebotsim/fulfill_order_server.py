@@ -39,7 +39,8 @@ class FulfillOrderServer(Node):
 
         # Optional retreat after pickup (helps avoid "stuck on inflation" / shelf collision)
         # This retreat is still Nav2 navigation (not time-based cmd_vel).
-        self.declare_parameter('post_pick_retreat_dx', -0.60)
+        self.declare_parameter('post_pick_retreat_dx', -0.90)
+        self.declare_parameter('post_drop_retreat_dx', 0.90)
 
         # Package attachment offset in robot base_link frame.
         # This fixes "diagonal robot => package lands on edge" by applying the offset in the robot frame,

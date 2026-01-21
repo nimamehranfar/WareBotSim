@@ -98,10 +98,8 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      # Keep XY tolerance as you had (prevents hunting), but tighten yaw hard:
-      # 0.05 rad ~= 2.9 degrees
-      xy_goal_tolerance: 0.30
-      yaw_goal_tolerance: 0.30
+      xy_goal_tolerance: 0.50
+      yaw_goal_tolerance: 0.50
       stateful: true
 
     FollowPath:
@@ -109,7 +107,7 @@ controller_server:
       debug_trajectory_details: false
 
       # BACKWARDS & SPEEDS
-      min_vel_x: -0.15        # CHANGED: Allow full speed backwards
+      min_vel_x: -0.15
       max_vel_x: 0.55
       max_vel_theta: 1.0
 
@@ -118,9 +116,9 @@ controller_server:
       min_speed_theta: 0.0
 
       # ACCELERATION (Smoother to prevent tilt)
-      acc_lim_x: 0.5          # LOWERED from 1.0
-      acc_lim_theta: 1.5      # LOWERED from 2.0
-      decel_lim_x: -0.5       # LOWERED braking power (was -1.0)
+      acc_lim_x: 0.5
+      acc_lim_theta: 1.5
+      decel_lim_x: -0.5
       decel_lim_theta: -1.5
 
       vx_samples: 30
@@ -129,7 +127,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.5
-      xy_goal_tolerance: 0.30
+      xy_goal_tolerance: 0.50
       trans_stopped_velocity: 0.05
       stateful: true
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]

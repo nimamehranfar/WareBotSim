@@ -139,7 +139,7 @@ class OrderManager(Node):
         }
 
         # Publish semantic frames in MAP frame (CENTERS, no approach offsets).
-        # All approach offsets are handled in fulfill_order_server to avoid double-offset confusion.
+        # All approach offsets are handled in fulfill_order_server to keep the navigation offsets in one place.
         for sid, (x, y) in shelves.items():
             send('map', f'shelf_{sid}', x, y, 0.0, 0.0)
 
